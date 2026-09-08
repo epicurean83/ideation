@@ -27,8 +27,10 @@ ideas/
     05-financial/             # 수익 모델, 3년 추정
     06-validation/            # 스코어카드, 실험 설계
     discovery/                # product-discovery 산출물 (brief, interview-guide, synthesis, one-pager)
+    research/<topic-slug>/    # deepdive 실행 1건당 폴더 1개 (plan.md, sources/, claims.csv, memo.md, 보고서)
+    papers/                   # paper-lookup 검색 로그와 초록·전문 (query-log.md, <id>.md)
     crucible/                 # crucible 토론 전문 (YYYY-MM-DD-<slug>.md)
-    docs/                     # 기획서(PRD/RFC), 피치 스크립트, 심의 자료
+    docs/                     # 기획서(PRD/RFC), 피치 스크립트, 심의 자료, references.bib
 ```
 
 스킬별 경로 오버라이드:
@@ -38,6 +40,41 @@ ideas/
 - `crucible` 전문은 `~/Documents/...`가 아니라 `ideas/<slug>/crucible/`에 쓴다. 중복 판정용 glob도 그 경로를 본다.
 - `market-sizing`, `synthesize-interviews`가 참조하는 `context/*.md`는 없다. 대신 `ideas/<slug>/00-intake/brief.md`와 `01-discovery/*.md`를 읽는다.
 - `lenny-podcast`는 트랜스크립트 아카이브가 없으므로 framework-only 모드로 답한다. 인용을 만들어내지 않는다.
+- `deepdive`의 research 폴더는 `ideas/<slug>/research/`다. 스킬이 `research/`·`docs/research/`·`~/deepdive/`를 후보로 고르지만 이 프로젝트에서는 항상 이 경로다. 교차 실행 위키(`~/.claude/research/wiki/`)와 applications ledger는 홈 디렉터리에 두는 스킬 기본값을 따른다.
+- `paper-lookup` 결과는 `ideas/<slug>/papers/`에 남긴다. 검색마다 `query-log.md`에 데이터베이스, 엔드포인트, 파라미터, 조회일, 건수를 적어 재현 가능하게 한다.
+- `citation-management`의 BibTeX는 `ideas/<slug>/docs/references.bib` 하나로 모은다.
+
+## 리서치 스킬 라우팅
+
+조사 요청이 들어오면 먼저 **어떤 질문인가**로 스킬을 고른다. 세 스킬은 역할이 겹치지 않는다.
+
+| 질문 유형 | 스킬 | 예 |
+|---|---|---|
+| 시장·업계·경쟁 구조를 **넓게** 훑는다 | `startup-design` Wave 1·2, `startup-competitors` | "이 시장 규모와 주요 플레이어는?" |
+| **하나의 결정**에 답하기 위한 데스크 리서치 | `deepdive` | "B2B로 갈까 B2C로 갈까", "X 기술은 실제로 어떻게 동작하나", "이 가설이 맞나" |
+| 논문·학술 근거·기술 타당성 | `paper-lookup` | "이 방식의 정확도를 검증한 연구가 있나", "이 DOI 전문 가져와" |
+| 인용 정리·검증·서지 | `citation-management` | "PRD 참고문헌을 BibTeX로", "이 인용 정보가 맞나" |
+
+**deepdive 사용 규칙**
+
+- 명시 호출만: `/deepdive <질문>`. description이 러시아어라 자연어 트리거는 기대하지 않는다. 대화·산출물은 한국어로 쓴다.
+- 깊이는 게이트의 무게에 맞춘다. **shallow**(5~7 소스, 15분): S0·S1의 탐색 질문, "X가 뭔가". **medium**(12~18 소스, 1시간): S2·S4의 가설 검증, 게이트 근거. **deep**(25~35 소스, 3시간): G4 판정이나 S5 심의 직전처럼 틀리면 비싼 결정. deep은 Plan-review gate에서 사용자의 명시적 "OK"를 기다린다.
+- deepdive는 Decision Spec에 **if-then 포크**가 하나 이상 있어야 medium 이상으로 돈다. 포크가 안 나오면 이 질문은 결정과 무관하다는 뜻이니 shallow로 낮추거나 `issue-tree`로 질문부터 다시 세운다.
+- 같은 질문을 `startup-design` 리서치 웨이브와 `deepdive` 양쪽에 돌리지 않는다. 웨이브가 지형을 그리고, deepdive는 그 지형 위의 특정 갈림길에 답한다.
+- Phase 6.9 보고서 내보내기(HTML/PDF/DOCX)는 pandoc·mmdc가 없어 실패한다. 마크다운 보고서와 `memo.md`가 산출물이다. `finish.py`가 6.9 때문에만 빨간불이면 그 사실을 적고 진행한다. 다른 phase 빨간불은 스킬 규칙대로 되돌아가 채운다.
+- deepdive `memo.md`의 권고와 포크 결과는 해당 게이트 판정 문서(`research-gate.md`, `scorecard.md`)에 `[research/<topic-slug>]`로 인용한다.
+
+**paper-lookup 사용 규칙**
+
+- 기술 기반 아이디어에서 "이게 되긴 하나"를 물을 때 쓴다. 벤더 자료나 블로그가 아니라 peer-reviewed 근거가 필요한 주장이 대상이다.
+- 결과에는 어떤 DB에 어떤 질의를 던졌는지 provenance를 남긴다. 한 DB가 비어 있으면 "없다"가 아니라 "여기엔 색인 안 됨"이라고 쓴다.
+- 1,000건·50콜을 넘길 검색은 사용자에게 먼저 묻는다.
+- API 키는 전부 선택이다. 없으면 낮은 rate limit으로 진행하고, 어떤 키가 도움이 되는지 한 줄만 알린다. `.env`가 있어도 지정된 4개 변수 외에는 읽지 않는다.
+
+**citation-management 사용 규칙**
+
+- S5에서 `docs/prd.md`와 `docs/one-pager.md`에 인용된 논문·보고서를 `references.bib`로 모으고 `validate_citations.py`로 검증한 뒤 심의에 올린다.
+- Google Scholar 스크립트는 `scholarly` 미설치로 쓰지 않는다. OpenAlex와 PubMed로 대체한다.
 
 ## 프로세스: 6단계 + 5게이트
 
@@ -56,7 +93,8 @@ S0 문제 정의 ─G0─▶ S1 기회 탐색 ─G1─▶ S2 시장 검증 ─G2
 |---|---|---|---|
 | 1 | `issue-tree` (Why/What) | 막연한 기회 영역을 원인·구성요소 트리로 분해 | `00-intake/issue-tree.md` |
 | 2 | `startup-design` Phase 0.5만 | 지배적 기존 해법, 선례 실패, 규제 즉사 요인 3건 검색 | `00-intake/preflight.md` |
-| 3 | `crucible --council` | 5인 페르소나 30초 돌 던지기 | 채팅 (파일 불필요) |
+| 3 | `deepdive` shallow (선택) | 도메인이 낯설 때 "X는 어떻게 돌아가나" 한 번. 트리에서 모르는 가지가 있을 때만 | `research/<topic>/memo.md` |
+| 4 | `crucible --council` | 5인 페르소나 30초 돌 던지기 | 채팅 (파일 불필요) |
 
 **G0 통과 조건:** 한 문장 문제 정의 + 대상 고객 가설 + 프리플라이트에 빨간불 없음. 빨간불이면 `PIPELINE.md`에 사유를 적고 종료.
 
@@ -83,7 +121,9 @@ S0 문제 정의 ─G0─▶ S1 기회 탐색 ─G1─▶ S2 시장 검증 ─G2
 | 2 | `market-sizing` | TAM/SAM/SOM을 top-down·bottom-up 양쪽으로 계산, 범위 제시 | `01-discovery/market-sizing.md` |
 | 3 | `startup-competitors` | 상위 경쟁사 3~5곳 배틀카드, 가격 지형, 기능 매트릭스 | `01-discovery/competitors-report.md`, `pricing-landscape.md` |
 | 4 | `market-research` | 리뷰 사이트·뉴스 기반 보완 조사 (필요 시) | `01-discovery/market-research.md` |
-| 5 | `startup-design` Phase 3.5a~3.5 | 검증 에이전트 실행 후 Research Gate | `01-discovery/verification-report.md`, `research-gate.md` |
+| 5 | `deepdive` medium | 웨이브가 끝난 뒤 남은 **핵심 가정 1~2개**만 골라 결정 포크로 검증. 예: "규제가 2년 내 완화되나", "기존 유통망이 우리 제품을 받나" | `research/<topic>/` |
+| 6 | `paper-lookup` (기술 아이디어만) | 핵심 기술의 성능·안전성·한계를 peer-reviewed 근거로 확인 | `papers/query-log.md`, `01-discovery/tech-feasibility.md` |
+| 7 | `startup-design` Phase 3.5a~3.5 | 검증 에이전트 실행 후 Research Gate. deepdive `memo.md`와 기술 타당성을 판정 근거에 포함 | `01-discovery/verification-report.md`, `research-gate.md` |
 
 `startup-design`의 Wave 3(고객 목소리)·Wave 4(유통)는 G2를 통과한 뒤 S3·S4에서 필요할 때 실행한다.
 
@@ -116,7 +156,8 @@ S0 문제 정의 ─G0─▶ S1 기회 탐색 ─G1─▶ S2 시장 검증 ─G2
 | 4 | `startup-design` Phase 4 + 7 (Stage A) | 린 캔버스, 가정 기반 수익 모델 | `02-strategy/lean-canvas.md`, `05-financial/revenue-model.md` |
 | 5 | `lean-startup` | 가정 지도 → 가장 위험한 가정부터 MVP·실험 설계, 혁신 회계 지표 정의 | `06-validation/assumptions.md`, `experiments.md` |
 | 6 | `prioritize` (RICE 또는 WSJF) | 실험·MVP 범위 스택랭킹, 스코프 컷 | `06-validation/experiment-ranking.md` |
-| 7 | `startup-design` Phase 8 | 7개 차원 스코어카드 + 판정 | `06-validation/scorecard.md` |
+| 7 | `deepdive` deep (조건부) | 스코어카드가 6~7점 경계이거나, 사업 모델 선택지가 둘로 갈릴 때. 포크 결과가 곧 G4 판정 근거. 사용자 OK 후 실행 | `research/<topic>/memo.md`, `application.md` |
+| 8 | `startup-design` Phase 8 | 7개 차원 스코어카드 + 판정 | `06-validation/scorecard.md` |
 
 **G4 통과 조건:** 스코어카드 6점 이상, 포지셔닝 문장 1개, 3개월 안에 돌릴 수 있는 실험 3개와 각 실험의 성공·실패 기준이 숫자로 적혀 있음. 4~5점이면 조건부(우려 사항 해소 계획 첨부), 3점 이하면 종료.
 
@@ -130,10 +171,11 @@ S0 문제 정의 ─G0─▶ S1 기회 탐색 ─G1─▶ S2 시장 검증 ─G2
 | 2 | `product-discovery` (Mode 4) | 고객 증거 중심 이해관계자 원페이저 (PRD 부록) | `discovery/one-pager.md` |
 | 3 | `critique` | 논리 공백, 근거 없는 가정, 빠진 관점 압박 테스트. 지적은 문서에 반영 | `docs/critique-round-N.md` |
 | 4 | `crucible` (Decision 모드) | 9~11인 페르소나 토론 후 판정. 사용자 명시 호출 | `crucible/YYYY-MM-DD-<slug>.md` |
-| 5 | `startup-pitch` | 10분/5분/2분 스크립트, 예상 Q&A, 채점 루브릭. 투자자 대신 경영진·심의위원 대상으로 톤 조정 | `docs/pitch-10min.md`, `pitch-qa.md` |
-| 6 | `critique` 2회차 | 피치 스크립트 대상으로 반복 | `docs/critique-round-N.md` |
+| 5 | `citation-management` | PRD·원페이저에 인용된 논문·보고서를 `references.bib`로 모으고 DOI·메타데이터 검증. 깨진 인용은 심의에서 신뢰를 깎는다 | `docs/references.bib`, `docs/citation-report.json` |
+| 6 | `startup-pitch` | 10분/5분/2분 스크립트, 예상 Q&A, 채점 루브릭. 투자자 대신 경영진·심의위원 대상으로 톤 조정 | `docs/pitch-10min.md`, `pitch-qa.md` |
+| 7 | `critique` 2회차 | 피치 스크립트 대상으로 반복 | `docs/critique-round-N.md` |
 
-**최종 산출물 세트:** `docs/one-pager.md`(1장 요약) + `docs/prd.md`(본문) + `06-validation/scorecard.md`(판정) + `docs/pitch-10min.md`(발표) + `crucible/` 판정문. 이 다섯 개가 갖춰져야 심의에 올린다.
+**최종 산출물 세트:** `docs/one-pager.md`(1장 요약) + `docs/prd.md`(본문) + `06-validation/scorecard.md`(판정) + `docs/pitch-10min.md`(발표) + `crucible/` 판정문 + `docs/references.bib`(검증된 서지). 이 여섯 개가 갖춰져야 심의에 올린다.
 
 ## 빠른 경로 (Fast Track)
 
@@ -158,6 +200,9 @@ Fast Track으로 통과한 아이디어는 `PROGRESS.md`에 Fast Track임을 남
 - `critique`: 어떤 문서든 남에게 보내기 전
 - `lenny-podcast`: PM 실무 관행 질문. framework-only 모드
 - `prioritize`: 후보가 3개 이상 쌓이면 즉시
+- `/deepdive` shallow: 대화 중 "X가 뭐지", "요즘 X 어떻게 됐지"가 나오면. 15분, 파일은 `research/`에 남김
+- `paper-lookup`: 누군가 "연구에 따르면"이라고 말했는데 출처가 없을 때. DOI·PMID 하나면 바로 조회
+- `citation-management`: 문서에 인용이 5개 넘게 쌓이면 그때부터 `references.bib`로 관리 시작
 
 ## 세션 운영
 
