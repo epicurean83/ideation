@@ -1,0 +1,13 @@
+[project]
+name = "nightshift"
+version = "0.1.0"
+description = "야간 자동 아이데이션 루프 — 근무 시간 토큰을 건드리지 않는 시간 창에서만 돈다"
+requires-python = ">=3.12"
+dependencies = ["claude-agent-sdk>=0.2.152"]
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

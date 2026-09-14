@@ -1,1 +1,5 @@
 .claude/settings.local.json
+harness/.venv/
+harness/state/
+__pycache__/
+.pytest_cache/
