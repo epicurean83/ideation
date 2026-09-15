@@ -10,7 +10,7 @@
 - **증거 없는 주장은 쓰지 않는다.** 모든 수치에 출처·날짜·신뢰도(High/Medium/Low)를 붙인다. 웹 검색이 막히면 `[Knowledge-Based — 검증 필요]` 표시를 달고 신뢰도를 한 단계 낮춘다.
 - **게이트는 정직하게.** 각 단계 끝의 Go/No-Go는 사용자가 듣고 싶은 답이 아니라 근거가 지지하는 답을 낸다. 스킬의 Radical Honesty Protocol을 그대로 적용한다.
 - **한 아이디어 = 한 디렉터리.** 산출물은 전부 `ideas/<slug>/` 아래에 쌓는다. 채팅에만 남기고 끝내지 않는다.
-- **비싼 스킬은 주간엔 명시 호출만, 야간 루프에선 자동.** `crucible` Decision 모드, `startup-design` Full 모드, 딥 리서치 웨이브, `deepdive` deep은 사용자가 근무하는 시간(09:00~22:00 KST)에는 사용자가 지시했을 때만 돌린다. 야간 자동 루프(`harness/nightshift`) 안에서는 사전 승인된 것으로 보고 필요할 때 돌린다. 22:00 이후라도 **대화형 세션**에서는 여전히 사용자가 지시했을 때만 돌린다. 자동 실행은 루프만 한다. 자세한 시간·한도 규칙은 「야간 자동 루프」 절.
+- **비싼 스킬은 대화형 세션에선 명시 호출만, 자동 루프에선 자동.** `crucible` Decision 모드, `startup-design` Full 모드, 딥 리서치 웨이브, `deepdive` deep은 대화형 세션에서는 사용자가 지시했을 때만 돌린다. 자동 루프(`harness/autoloop`) 안에서는 사전 승인된 것으로 보고 필요할 때 돌린다. 한도 규칙은 「자동 루프」 절.
 - **superpowers 플러그인은 이 프로젝트에서 비활성.** 브레인스토밍은 `startup-design` Phase 2와 `blue-ocean-strategy`가 대신한다.
 
 ## 디렉터리 규약
@@ -58,7 +58,7 @@ ideas/
 **deepdive 사용 규칙**
 
 - 명시 호출만: `/deepdive <질문>`. description이 러시아어라 자연어 트리거는 기대하지 않는다. 대화·산출물은 한국어로 쓴다.
-- 깊이는 게이트의 무게에 맞춘다. **shallow**(5~7 소스, 15분): S0·S1의 탐색 질문, "X가 뭔가". **medium**(12~18 소스, 1시간): S2·S3의 가설 검증, 게이트 근거. **deep**(25~35 소스, 3시간): G3 판정이나 S4 심의 준비처럼 틀리면 비싼 결정. deep은 Plan-review gate에서 사용자의 명시적 "OK"를 기다린다. 야간 루프에서는 사용자 대신 독립 서브에이전트가 plan을 검토한다(「야간 자동 루프」 절). 이 문서가 스킬 규칙보다 우선한다.
+- 깊이는 게이트의 무게에 맞춘다. **shallow**(5~7 소스, 15분): S0·S1의 탐색 질문, "X가 뭔가". **medium**(12~18 소스, 1시간): S2·S3의 가설 검증, 게이트 근거. **deep**(25~35 소스, 3시간): G3 판정이나 S4 심의 준비처럼 틀리면 비싼 결정. deep은 Plan-review gate에서 사용자의 명시적 "OK"를 기다린다. 자동 루프에서는 사용자 대신 독립 서브에이전트가 plan을 검토한다(「자동 루프」 절). 이 문서가 스킬 규칙보다 우선한다.
 - deepdive는 Decision Spec에 **if-then 포크**가 하나 이상 있어야 medium 이상으로 돈다. 포크가 안 나오면 이 질문은 결정과 무관하다는 뜻이니 shallow로 낮추거나 `issue-tree`로 질문부터 다시 세운다.
 - 같은 질문을 `startup-design` 리서치 웨이브와 `deepdive` 양쪽에 돌리지 않는다. 웨이브가 지형을 그리고, deepdive는 그 지형 위의 특정 갈림길에 답한다.
 - Phase 6.9 보고서 내보내기(HTML/PDF/DOCX)는 pandoc·mmdc가 없어 실패한다. 마크다운 보고서와 `memo.md`가 산출물이다. `finish.py`가 6.9 때문에만 빨간불이면 그 사실을 적고 진행한다. 다른 phase 빨간불은 스킬 규칙대로 되돌아가 채운다.
@@ -81,7 +81,7 @@ ideas/
 ```
 S0 문제 정의 ─G0─▶ S1 기회 탐색 ─G1─▶ S2 시장 검증 ─G2─▶ S3 전략·모델 ─G3─▶ S4 기획서·심의 ─G4─▶ ┃ S5 실증 ─G5─▶ 본 심의
                                                                                            ┃
-                                                  여기까지 자동 (야간 루프 가능) ─────────────────┛ 여기부터 사람 (프로토타입·인터뷰)
+                                                  여기까지 자동 (자동 루프 가능) ─────────────────┛ 여기부터 사람 (프로토타입·인터뷰)
 ```
 
 원칙은 **싸고 빠른 검증을 먼저, 비싼 리서치는 나중에, 사람이 직접 해야 하는 실증은 맨 마지막에**다. 앞 단계에서 죽일 수 있는 아이디어를 뒤 단계까지 끌고 가지 않는다.
@@ -154,7 +154,7 @@ S0 문제 정의 ─G0─▶ S1 기회 탐색 ─G1─▶ S2 시장 검증 ─G2
 | 4 | `startup-design` Phase 4 + 7 (Stage A) | 린 캔버스, 가정 기반 수익 모델 | `02-strategy/lean-canvas.md`, `05-financial/revenue-model.md` |
 | 5 | `lean-startup` | 가정 지도 → 가장 위험한 가정부터 MVP·실험 설계, 혁신 회계 지표 정의. 프로토타입 인터뷰는 실험 #1로 둔다 | `06-validation/assumptions.md`, `experiments.md` |
 | 6 | `prioritize` (RICE 또는 WSJF) | 실험·MVP 범위 스택랭킹, 스코프 컷 | `06-validation/experiment-ranking.md` |
-| 7 | `deepdive` deep (조건부) | 스코어카드가 6~7점 경계이거나, 사업 모델 선택지가 둘로 갈릴 때. 포크 결과가 곧 G3 판정 근거. 주간에는 사용자 OK 후 실행, 야간 루프에서는 독립 서브에이전트의 plan 검토 후 실행 | `research/<topic>/memo.md`, `application.md` |
+| 7 | `deepdive` deep (조건부) | 스코어카드가 6~7점 경계이거나, 사업 모델 선택지가 둘로 갈릴 때. 포크 결과가 곧 G3 판정 근거. 대화형 세션에서는 사용자 OK 후 실행, 자동 루프에서는 독립 서브에이전트의 plan 검토 후 실행 | `research/<topic>/memo.md`, `application.md` |
 | 8 | `startup-design` Phase 8 | 7개 차원 스코어카드 + 판정. **인터뷰 부재를 감점 사유로 쓰지 않는다.** Problem severity는 데스크 증거(리뷰·민원·지출 흔적)로 채점한다 | `06-validation/scorecard.md` |
 
 **G3 통과 조건:** 스코어카드 6점 이상, 포지셔닝 문장 1개, 3개월 안에 돌릴 수 있는 실험 3개와 각 실험의 성공·실패 기준이 숫자로 적혀 있음. 4~5점이면 조건부(우려 사항 해소 계획 첨부), 3점 이하면 종료. 조건부 사유가 실증 부재뿐이면 통과로 본다. `startup-design` 스코어카드의 자체 라벨(6~7점 conditional)은 문서에 그대로 적되, G3 판정은 이 문서의 기준(6점 이상 통과)을 따른다.
@@ -167,7 +167,7 @@ S0 문제 정의 ─G0─▶ S1 기회 탐색 ─G1─▶ S2 시장 검증 ─G2
 |---|---|---|---|
 | 1 | `prd` | 깊이 선택: one-pager(경영진) → brief(사업부) → full PRD/RFC(실행팀). 앞 단계 산출물을 전부 읽고 쓴다 | `docs/one-pager.md`, `docs/prd.md` |
 | 2 | `critique` | 논리 공백, 근거 없는 가정, 빠진 관점 압박 테스트. 지적은 문서에 반영 | `docs/critique-round-N.md` |
-| 3 | `crucible` (Decision 모드) | 9~11인 페르소나 토론 후 판정. 주간에는 사용자 명시 호출, 야간 루프에서는 자동 실행 | `crucible/YYYY-MM-DD-<slug>.md` |
+| 3 | `crucible` (Decision 모드) | 9~11인 페르소나 토론 후 판정. 대화형 세션에서는 사용자 명시 호출, 자동 루프에서는 자동 실행 | `crucible/YYYY-MM-DD-<slug>.md` |
 | 4 | `citation-management` | PRD·원페이저에 인용된 논문·보고서를 `references.bib`로 모으고 DOI·메타데이터 검증. 깨진 인용은 심의에서 신뢰를 깎는다 | `docs/references.bib`, `docs/citation-report.json` |
 | 5 | `startup-pitch` | 10분/5분/2분 스크립트, 예상 Q&A, 채점 루브릭. 투자자 대신 경영진·심의위원 대상으로 톤 조정 | `docs/pitch-10min.md`, `pitch-qa.md` |
 | 6 | `critique` 2회차 | 피치 스크립트 대상으로 반복 | `docs/critique-round-N.md` |
@@ -201,10 +201,10 @@ S0 문제 정의 ─G0─▶ S1 기회 탐색 ─G1─▶ S2 시장 검증 ─G2
 2. S1: `startup-design` Fast Track (변형 3개) + `jobs-to-be-done` 한 문장
 3. S2: Wave 1·2만, `market-sizing` 생략하고 startup-design의 TAM/SAM/SOM 사용
 4. S3: 린 캔버스 + 스코어카드 + 실험 3개
-5. S4: `prd` one-pager + `critique` 1회 → 판정 `통과(Fast Track)`. `통과(실증 대기)`가 아니며 야간 루프의 목표 개수에 들어가지 않는다
+5. S4: `prd` one-pager + `critique` 1회 → 판정 `통과(Fast Track)`. `통과(실증 대기)`가 아니며 자동 루프의 목표 개수에 들어가지 않는다
 6. S5 (사람 단계): 프로토타입 + 인터뷰 3건 이상. 기존 고객 대화 5건 이상 있으면 문서화로 대체 가능
 
-Fast Track으로 통과한 아이디어는 `PROGRESS.md`에 Fast Track임을 남기고, S5·본 심의 전에 Full로 확장해 G4를 다시 받는다. 야간 루프는 Fast Track을 쓰지 않는다.
+Fast Track으로 통과한 아이디어는 `PROGRESS.md`에 Fast Track임을 남기고, S5·본 심의 전에 Full로 확장해 G4를 다시 받는다. 자동 루프는 Fast Track을 쓰지 않는다.
 
 ## 수시 호출 스킬
 
@@ -220,44 +220,43 @@ Fast Track으로 통과한 아이디어는 `PROGRESS.md`에 Fast Track임을 남
 - `paper-lookup`: 누군가 "연구에 따르면"이라고 말했는데 출처가 없을 때. DOI·PMID 하나면 바로 조회
 - `citation-management`: 문서에 인용이 5개 넘게 쌓이면 그때부터 `references.bib`로 관리 시작
 
-## 야간 자동 루프 (`harness/nightshift`)
+## 자동 루프 (`harness/autoloop`)
 
-사용자가 퇴근한 뒤에만 S0~S4를 자동으로 돌려 `통과(실증 대기)` 아이템을 쌓는다. 목표 개수(`nightshift.toml`의 `target_passed`, 기본 10)에 도달하면 멈춘다.
+S0~S4를 무인으로 돌려 `통과(실증 대기)` 아이템을 쌓는다. 목표 개수(`autoloop.toml`의 `target_passed`, 기본 10)에 도달하면 멈춘다.
 
-**불변식: 사용자가 09:00에 출근했을 때 5시간 창이 루프 때문에 줄어 있으면 안 된다. 주간 한도는 70%를 넘으면 사용자가 작업 1건씩 승인한다.**
-
-- **시작:** systemd 타이머가 22:00(Asia/Seoul)에 러너를 띄운다. 근무 시간(09:00~22:00)이면 러너는 API를 한 번도 부르지 않고 끝난다. 동시에 두 개가 돌지 않도록 잠금 파일을 쓴다.
-- **5시간 창 규칙:** D = 다음 근무 시작 − 5분(08:55).
-  - 새 창을 열 수 있는 마지막 시각은 D − 5h = **03:55**다.
-  - 이미 열린 창의 종료 시각이 D 이전이면 그 창이 끝나기 5분 전까지 계속한다.
-  - 22:00에 시작하면 창 2개(22:00~03:00, 03:00~08:00)를 쓰고 **08:00 전후에 멈춘다.**
-  - 창 종료 시각은 2026-09-14 로컬 기록 복원 결과 "시작을 정시로 내림 + 5h"였다. 계산은 내림 없이 시작 + 5h로 잡아 보수적이다.
+- **실행:** 스케줄링은 없다(2026-09-15 사용자 결정으로 저녁 전용 타이머 제거). 사용자가 원할 때 직접 띄운다.
+  - `uv run --directory harness python -m autoloop run` — 터미널에서 실행, Ctrl+C로 멈춤
+  - `--dry-run`을 붙이면 한도 확인(Haiku 1회)과 판정까지만 한다
+  - 동시에 두 개가 돌지 않도록 잠금 파일을 쓴다. 시간대 제한은 없어서 낮에 띄우면 사용자 대화 세션과 같은 한도를 나눠 쓴다.
 - **주간 한도 규칙 (2026-09-15 사용자 결정):**
   - 주간 사용률 **70% 미만이면 제한 없이** 작업을 시작한다. 비싼 스킬도 막지 않는다.
-  - **70% 이상이면 작업 1건을 시작할 때마다 승인**을 받는다. 러너가 Tailscale IP에만 열리는 승인 페이지에 요청을 올리고 기다린다.
-  - 승인하면 그 작업 1건만 돌리고, 다음 작업은 다시 묻는다.
-  - 거절하거나, 5시간 창 규칙상 멈춰야 하는 시각까지 답이 없으면 그날 밤을 끝낸다. Tailscale IP를 못 얻어 페이지를 열 수 없어도 끝낸다.
+  - **70% 이상이면 작업 1건을 시작할 때마다 승인**을 받는다. 러너가 Tailscale IP에만 열리는 승인 페이지에 요청을 올리고 답이 올 때까지 기다린다.
+  - 승인하면 그 작업 1건만 돌리고, 다음 작업은 다시 묻는다. 거절하면 루프를 끝낸다. Tailscale IP를 못 얻어 페이지를 열 수 없어도 끝낸다.
   - 70% 미만에서 시작한 작업은 도중에 70%를 넘어도 끝까지 한다. 확인 단위는 "작업 1건"이다.
-  - 승인 페이지 주소는 `uv run --directory harness python -m nightshift approval-url`로 확인해 휴대폰에 즐겨찾기한다. 토큰은 `harness/state/approval-token`(0600)에 있다. 페이지는 푸시 알림을 보내지 않으니 직접 열어 확인한다.
-  - 이 규칙은 사용자 근무 시간 몫을 따로 예약하지 않는다. 루프가 70% 가까이 쓴 주에는 낮에 쓸 여유가 그만큼 줄어든다.
+  - 승인 페이지 주소는 `uv run --directory harness python -m autoloop approval-url`로 확인해 즐겨찾기한다. 토큰은 `harness/state/approval-token`(0600)에 있다. 페이지는 러너가 승인을 기다리는 동안에만 열리고, 푸시 알림은 없다.
+- **한도 소진(`rejected`):** 초기화까지 `max_wait_hours`(6시간) 이내면 작업을 끊고 초기화까지 기다린 뒤 이어간다. 더 멀면 루프를 끝낸다.
 - **fail-closed:** 작업을 시작하기 전에 주간 사용률 정보가 없거나, 10분 넘게 갱신되지 않았거나, 주간 초기화 시각이 지났으면 Haiku 최소 호출(probe)로 다시 읽는다. 그래도 못 읽으면 멈춘다.
-- **감시:** 작업 중에는 5시간 창·근무 시간·한도 소진(`rejected`)만 본다. 판정은 한도 이벤트·메시지 수신 때와 30초마다 다시 해서, 규칙을 넘으면 interrupt한다. interrupt가 실패하면 세션을 끊는다. 근무일 08:57에는 별도 타이머가 서비스를 강제 종료한다.
-- `ideas/` 아래를 하나도 바꾸지 않은 작업이 2번 연속이면 할 일이 막힌 것으로 보고 그날 밤을 끝낸다.
+- **감시:** 작업 중에는 한도 소진과 작업 최대 길이(90분)만 본다. 판정은 한도 이벤트·메시지 수신 때와 30초마다 다시 해서, 넘으면 interrupt한다. interrupt가 실패하면 세션을 끊는다.
+- `ideas/` 아래를 하나도 바꾸지 않은 작업이 2번 연속이면 할 일이 막힌 것으로 보고 루프를 끝낸다. 작업이 3번 연속 실패해도 끝낸다.
 - **자기 보호:** 작업 세션은 `bypassPermissions`로 돌지만, 권한 거부 규칙과 PreToolUse hook이 다음을 막는다.
-  - `harness/nightshift`·`state`(승인 토큰 포함)·설정·지시문, `~/.config/systemd` 수정, 승인 토큰 읽기
+  - `harness/autoloop`·`state`(승인 토큰 포함)·설정·지시문, `~/.config/systemd` 수정, 승인 토큰 읽기
   - 프로젝트·사용자 `settings*.json`, `harness/.venv`·`uv.lock` 수정
   - 자격증명 읽기, `git push`, `systemctl`
   - 거부 규칙은 세션 전체에, hook은 서브에이전트 도구 호출에도 적용된다(SDK 문서 기준, 서브에이전트 경로는 실측 안 함). 웹 원자료의 프롬프트 인젝션을 완전히 막지는 못한다.
 - **긴 스킬:** 작업 1건은 최대 90분이다.
-  - `deepdive` deep의 Plan-review gate는 사람의 답을 기다리게 되어 있지만, 사용자는 S0~S4를 사람 없이 돌리기로 했다(2026-09-14). 그래서 야간에는 사용자 대신 **독립 서브에이전트**가 plan을 검토한다. 검토 기준은 포크가 결정에 연결되는지, 소스 계획이 한쪽으로 치우치지 않았는지다. 검토 결과는 `research/<topic>/plan-review.md`에 남기고 진행한다. 최종 `memo.md` 머리에 「plan 검토: 서브에이전트(사람 아님)」를 적어 나중에 읽는 사람이 사람 검토로 오해하지 않게 한다.
+  - `deepdive` deep의 Plan-review gate는 사람의 답을 기다리게 되어 있지만, 사용자는 S0~S4를 사람 없이 돌리기로 했다(2026-09-14). 그래서 자동 루프에서는 사용자 대신 **독립 서브에이전트**가 plan을 검토한다. 검토 기준은 포크가 결정에 연결되는지, 소스 계획이 한쪽으로 치우치지 않았는지다. 검토 결과는 `research/<topic>/plan-review.md`에 남기고 진행한다. 최종 `memo.md` 머리에 「plan 검토: 서브에이전트(사람 아님)」를 적어 나중에 읽는 사람이 사람 검토로 오해하지 않게 한다.
   - deep이 한 작업(90분)에 끝나지 않으면 다음 작업이 기존 `research/<topic>/`에서 이어간다. 새로 시작하지 않는다.
   - `deepdive` medium도 기존 `research/<topic>/`가 있으면 새로 시작하지 않고 이어간다.
-  - `crucible` Decision의 intake 확인은 야간에는 intake를 판정문 파일 머리에 적는 것으로 대신한다.
-- **확인:** `uv run --directory harness python -m nightshift plan`은 API 호출 없이 오늘 밤 시간표와 마지막 관측 주간 사용률을 보여 준다. 실행 기록은 `harness/state/`(git 제외)에 있다.
-- **설치:** `harness/install-systemd.sh --enable` / `--disable`.
-- **작업 1건의 지시문:** `harness/prompts/night-job.md`.
-- **구독 인증:** 루프는 claude.ai 구독 로그인으로 돈다. 서비스 유닛은 `ANTHROPIC_API_KEY`를 지운다.
-- 사용자가 야간에 직접 Claude를 쓰면 같은 한도를 나눠 쓴다. 러너는 이벤트로 보이는 사용률만 알고 누가 썼는지는 모른다.
+  - `crucible` Decision의 intake 확인은 자동 루프에서는 intake를 판정문 파일 머리에 적는 것으로 대신한다.
+- **아이디어 보드:** `uv run --directory harness python -m autoloop board`로 띄운다. `run` 중에는 루프가 함께 띄운다.
+  - `통과(실증 대기)` 아이템을 카드로 보여 준다. 카드에는 스코어카드 점수, 인터뷰 대기 질문 수, 원페이저·PRD·스코어카드 바로가기가 있다. 진행 중·종료 목록도 함께 보인다.
+  - 파일을 요청마다 새로 읽고 1분마다 새로고침한다. 루프가 승인을 기다리면 상단에 배너와 승인 페이지 링크를 띄운다.
+  - 주소는 `http://<Tailscale IP>:8766/?t=<승인 페이지와 같은 토큰>`이고 Tailscale IP에만 열린다. 첫 방문 뒤에는 쿠키로 유지된다.
+  - 마크다운은 원문 HTML을 끄고 렌더링하며, `ideas/<slug>/` 안의 `.md`만 연다.
+- **확인:** `uv run --directory harness python -m autoloop status`는 API 호출 없이 마지막 관측 주간 사용률과 통과 개수를 보여 준다. 실행 기록은 `harness/state/`(git 제외)에 있다.
+- **작업 1건의 지시문:** `harness/prompts/job.md`.
+- **구독 인증:** 루프는 claude.ai 구독 로그인으로 돈다. 셸에 `ANTHROPIC_API_KEY`가 있으면 API로 과금되니 실행 전에 확인한다.
+- 루프가 도는 동안 사용자가 직접 Claude를 쓰면 같은 한도를 나눠 쓴다. 러너는 이벤트로 보이는 사용률만 알고 누가 썼는지는 모른다.
 
 ## 세션 운영
 

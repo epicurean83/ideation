@@ -1,26 +1,22 @@
-"""언제 토큰을 써도 되는지 판정한다. 부수효과 없는 순수 함수만 둔다.
+"""지금 작업을 시작하거나 계속해도 되는지 판정한다. 부수효과 없는 순수 함수만 둔다.
 
-5시간 창 규칙 — 사용자가 근무를 시작하는 시각(work_start)에 5시간 창이 비어 있어야 한다
-  창은 "직전 창이 끝난 뒤 첫 요청" 시각에 열린다. 2026-09-14 로컬 기록으로 복원하면
-  종료 시각 = 시작 시각을 정시로 내림 + 5h 였다(16:01:50 시작 → 21:00 종료).
-  아래 계산은 내림 없이 시작 + 5h로 잡으므로 실제보다 늦게 끝난다고 가정한다(보수적).
-  D = 다음 work_start - safety_margin 이라고 하면:
-  - 지금 요청이 새 창을 열어도 now + 5h <= D 이면 안전하다. 그 경계가 fresh_limit = D - 5h.
-  - 이미 열린 창의 종료 시각 R을 알고 R <= D 이면, R 직전까지는 그 창 안이므로 안전하다.
-  - 그 밖에는 요청 하나가 사용자 아침 창을 열거나 갉아먹을 수 있으므로 멈춘다.
+시간대 제한은 없다(2026-09-15 사용자 결정: 저녁에만 도는 스케줄링 제거). 루프는 사용자가 직접 띄울 때 돈다.
 
 주간 한도 규칙 (2026-09-15 사용자 결정)
   - 주간 사용률 < approval_threshold(70%): 새 작업을 자유롭게 시작한다.
   - 주간 사용률 ≥ approval_threshold: 작업 1건을 시작할 때마다 사용자 승인이 필요하다(Action.ASK).
   - 이미 시작한 작업은 도중에 70%를 넘어도 끝까지 한다. 확인 단위는 "작업 1건"이다.
   - 작업을 시작하려는데 주간 사용률 정보가 없거나 오래됐으면 먼저 읽는다(Action.PROBE, fail-closed).
+
+한도 소진 (status=rejected)
+  - 초기화까지 max_wait 이내면 기다리고(WAIT), 더 멀면 멈춘다(STOP). 도는 작업은 끊는다.
 """
 
 from __future__ import annotations
 
 import tomllib
 from dataclasses import dataclass
-from datetime import datetime, time, timedelta
+from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -29,16 +25,12 @@ from zoneinfo import ZoneInfo
 @dataclass(frozen=True)
 class Config:
     tz: ZoneInfo
-    work_start: time
-    work_end: time
-    workdays: frozenset[int]
-    margin: timedelta
-    window: timedelta
     job_max: timedelta
-    min_job: timedelta
     usage_max_age: timedelta
+    max_wait: timedelta
     approval_threshold: float
     approval_port: int
+    board_port: int
     target_passed: int
     model: str | None
     probe_model: str
@@ -50,16 +42,12 @@ class Config:
         weekly, loop = raw["weekly"], raw["loop"]
         return cls(
             tz=ZoneInfo(raw["timezone"]),
-            work_start=time.fromisoformat(raw["work_start"]),
-            work_end=time.fromisoformat(raw["work_end"]),
-            workdays=frozenset(raw["workdays"]),
-            margin=timedelta(minutes=raw["safety_margin_minutes"]),
-            window=timedelta(hours=raw["window_hours"]),
             job_max=timedelta(minutes=raw["job_max_minutes"]),
-            min_job=timedelta(minutes=raw["min_job_minutes"]),
             usage_max_age=timedelta(minutes=raw["usage_max_age_minutes"]),
+            max_wait=timedelta(hours=raw["max_wait_hours"]),
             approval_threshold=weekly["approval_threshold"],
             approval_port=weekly["approval_port"],
+            board_port=raw["board"]["port"],
             target_passed=loop["target_passed"],
             model=loop["model"] or None,
             probe_model=loop["probe_model"],
@@ -122,50 +110,8 @@ class Action(Enum):
 @dataclass(frozen=True)
 class Decision:
     action: Action
-    until: datetime
     reason: str
-
-
-# ── 시각 계산 ────────────────────────────────────────────────────────────────
-
-
-def _at(day: datetime, t: time, cfg: Config) -> datetime:
-    return datetime.combine(day.date(), t, tzinfo=cfg.tz)
-
-
-def is_work_time(now: datetime, cfg: Config) -> bool:
-    now = now.astimezone(cfg.tz)
-    return now.weekday() in cfg.workdays and cfg.work_start <= now.time() < cfg.work_end
-
-
-def next_work_start(now: datetime, cfg: Config) -> datetime:
-    """now 이후 가장 가까운 근무 시작 시각. 근무 중이면 now."""
-    now = now.astimezone(cfg.tz)
-    if is_work_time(now, cfg):
-        return now
-    for offset in range(8):
-        candidate = _at(now + timedelta(days=offset), cfg.work_start, cfg)
-        if candidate > now and candidate.weekday() in cfg.workdays:
-            return candidate
-    raise ValueError("workdays가 비어 있다")
-
-
-def deadline(now: datetime, cfg: Config) -> datetime:
-    """D: 루프가 소비한 5시간 창이 반드시 끝나 있어야 하는 시각."""
-    return next_work_start(now, cfg) - cfg.margin
-
-
-def spend_until(now: datetime, usage: Usage, cfg: Config) -> tuple[datetime, str]:
-    """5시간 창 규칙만으로 본, 요청을 보내도 되는 마지막 시각."""
-    d = deadline(now, cfg)
-    fresh_limit = d - cfg.window
-    r = usage.five_reset
-    if r is not None and now < r - cfg.margin:
-        if r > d:
-            return fresh_limit, f"현재 창이 {r:%H:%M}까지 이어져 아침 창을 침범"
-        if r - cfg.margin >= fresh_limit:
-            return r - cfg.margin, f"현재 창이 {r:%H:%M}에 끝남 (≤ {d:%H:%M})"
-    return fresh_limit, f"새 창을 열어도 {d:%H:%M} 전에 끝나는 마지막 시각"
+    until: datetime | None = None  # WAIT일 때 기다릴 시각
 
 
 def usage_missing(now: datetime, usage: Usage, cfg: Config) -> str | None:
@@ -178,35 +124,25 @@ def usage_missing(now: datetime, usage: Usage, cfg: Config) -> str | None:
     return None
 
 
-# ── 종합 판정 ────────────────────────────────────────────────────────────────
-
-
 def decide(now: datetime, usage: Usage, cfg: Config, *, starting_job: bool, approved: bool = False) -> Decision:
     """지금 토큰을 써도 되는가.
 
-    starting_job: 새 작업을 시작하려는가(주간 규칙 적용), 도는 작업을 계속하려는가(시간·한도 소진만 본다).
+    starting_job: 새 작업을 시작하려는가(주간 규칙 적용), 도는 작업을 계속하려는가(한도 소진만 본다).
     approved: 이번에 시작할 작업 1건에 대해 사용자가 이미 승인했는가.
     """
-    if is_work_time(now, cfg):
-        return Decision(Action.STOP, now, "근무 시간")
-
-    until, why = spend_until(now, usage, cfg)
-    if now >= until:
-        return Decision(Action.STOP, now, f"5시간 창 규칙: {why}")
-
     if usage.rejected_until and usage.rejected_until > now:
-        if usage.rejected_until < until:
-            return Decision(Action.WAIT, usage.rejected_until, "한도 소진, 초기화까지 대기")
-        return Decision(Action.STOP, now, "한도 소진, 오늘 밤 안에 초기화되지 않음")
+        if usage.rejected_until - now <= cfg.max_wait:
+            return Decision(Action.WAIT, f"한도 소진, {usage.rejected_until:%m-%d %H:%M} 초기화까지 대기",
+                            usage.rejected_until)
+        return Decision(Action.STOP, f"한도 소진, 초기화({usage.rejected_until:%m-%d %H:%M})가 {cfg.max_wait}보다 멂")
 
     if not starting_job:
-        return Decision(Action.RUN, until, why)
+        return Decision(Action.RUN, "작업 계속")
 
     if missing := usage_missing(now, usage, cfg):
-        return Decision(Action.PROBE, until, missing)
+        return Decision(Action.PROBE, missing)
 
     if usage.seven_util >= cfg.approval_threshold and not approved:
-        return Decision(Action.ASK, until,
-                        f"주간 사용률 {usage.seven_util:.0%} ≥ {cfg.approval_threshold:.0%}, 작업 1건마다 승인 필요")
+        return Decision(Action.ASK, f"주간 사용률 {usage.seven_util:.0%} ≥ {cfg.approval_threshold:.0%}, 작업 1건마다 승인 필요")
 
-    return Decision(Action.RUN, until, why)
+    return Decision(Action.RUN, f"주간 사용률 {usage.seven_util:.0%}" + (" (승인됨)" if approved else ""))

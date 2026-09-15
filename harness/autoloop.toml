@@ -1,0 +1,21 @@
+# 자동 루프 설정. `uv run --directory harness python -m autoloop run`으로 직접 실행한다.
+
+timezone = "Asia/Seoul"     # 로그 파일 날짜와 표시용
+job_max_minutes = 90        # 작업 1건 최대 길이
+usage_max_age_minutes = 10  # 작업 시작 판정에 쓰는 주간 사용률이 이보다 오래되면 다시 읽는다
+max_wait_hours = 6          # 한도 소진 시 초기화까지 이 시간 이내면 기다리고, 더 멀면 종료한다
+
+[weekly]
+# 2026-09-15 사용자 결정: 주간 사용률이 이 값 미만이면 루프가 자유롭게 쓰고,
+# 이 값 이상이면 작업 1건을 시작할 때마다 승인 페이지에서 사용자 승인을 받는다.
+approval_threshold = 0.70
+approval_port = 8765        # Tailscale IP에만 바인딩한다
+
+[board]
+port = 8766                 # 아이디어 보드. `autoloop board`로 띄우고, `run` 중에도 함께 뜬다. Tailscale IP에만 바인딩
+
+[loop]
+target_passed = 10          # PIPELINE.md에 `통과(실증 대기)`가 이만큼 쌓이면 멈춘다
+model = ""                  # 비우면 사용자 기본 모델
+probe_model = "claude-haiku-4-5-20251001"  # 작업 전에 한도 상태만 읽는 최소 호출
+prompt_file = "harness/prompts/job.md"

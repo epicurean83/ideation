@@ -1,11 +1,11 @@
-"""야간 루프 러너.
+"""자동 루프 러너. 사용자가 `python -m autoloop run`으로 직접 띄운다(스케줄링 없음).
 
 한 번 실행되면 policy.decide가 STOP을 낼 때까지 작업을 하나씩 돌린다. 작업 1건 = Agent SDK 세션 1개.
 
 - 작업을 시작하기 전에 한도 정보가 없거나 오래됐으면 Haiku 최소 호출(probe)로 새로 읽는다.
 - 주간 사용률이 approval_threshold 이상이면 승인 페이지에 요청을 올리고 사용자 답을 기다린다.
-  승인하면 작업 1건을 돌리고, 거절하거나 시간 규칙상 멈춰야 할 때까지 답이 없으면 그날 밤을 끝낸다.
-- 작업 중에는 5시간 창·근무 시간·한도 소진만 본다. 도중에 주간 기준을 넘어도 그 작업은 끝낸다.
+  승인하면 작업 1건을 돌리고, 거절하면 루프를 끝낸다. 답이 올 때까지(또는 러너를 멈출 때까지) 기다린다.
+- 작업 중에는 한도 소진(rejected)과 작업 최대 길이만 본다. 도중에 주간 기준을 넘어도 그 작업은 끝낸다.
   판정은 한도 이벤트·메시지 수신 때와 CHECK_EVERY_S마다 다시 하고, RUN이 아니면 interrupt한다.
 """
 
@@ -32,14 +32,14 @@ from claude_agent_sdk import (
     TextBlock,
 )
 
-from . import approval
-from .policy import Action, Config, Decision, Usage, decide, is_work_time, spend_until
+from . import approval, board
+from .policy import Action, Config, Decision, Usage, decide
 
 HARNESS = Path(__file__).resolve().parents[1]
 REPO = HARNESS.parent
 STATE_DIR = HARNESS / "state"
 EVENTS_FILE = STATE_DIR / "events.jsonl"
-LOCK_FILE = STATE_DIR / "nightshift.lock"
+LOCK_FILE = STATE_DIR / "autoloop.lock"
 TOKEN_FILE = STATE_DIR / "approval-token"
 PIPELINE = REPO / "ideas" / "PIPELINE.md"
 PASSED_LABEL = "통과(실증 대기)"
@@ -49,10 +49,10 @@ INTERRUPT_GRACE_S = 120
 APPROVAL_POLL_S = 2
 MAX_CONSECUTIVE_FAILURES = 3
 FAILURE_BACKOFF_S = 60
-MAX_IDLE_JOBS = 2  # 산출물이 하나도 안 바뀐 작업이 연속 이만큼이면 그날 밤 종료
+MAX_IDLE_JOBS = 2  # 산출물이 하나도 안 바뀐 작업이 연속 이만큼이면 루프 종료
 EVENTS_MAX_BYTES = 2_000_000
 
-log = logging.getLogger("nightshift")
+log = logging.getLogger("autoloop")
 
 
 def now_in(cfg: Config) -> datetime:
@@ -86,13 +86,14 @@ def ideas_fingerprint() -> frozenset:
     return frozenset(entries)
 
 
-class Night:
-    """이번 야간의 한도 상태와 승인 페이지."""
+class LoopState:
+    """이번 실행의 한도 상태와 승인 페이지."""
 
     def __init__(self, cfg: Config):
         self.cfg = cfg
         self.usage = Usage()
         self.gate: approval.ApprovalGate | None = None
+        self.board: board.Board | None = None
 
     def observe(self, raw: dict, source: str) -> None:
         now = now_in(self.cfg)
@@ -106,23 +107,36 @@ class Night:
     def decision(self, *, starting_job: bool, approved: bool = False) -> Decision:
         return decide(now_in(self.cfg), self.usage, self.cfg, starting_job=starting_job, approved=approved)
 
-    def may_request(self) -> bool:
-        """5시간 창·근무 시간 규칙만 봤을 때 요청 하나를 보내도 되는가 (probe 허용 여부)."""
-        now = now_in(self.cfg)
-        return not is_work_time(now, self.cfg) and now < spend_until(now, self.usage, self.cfg)[0]
-
     def close(self) -> None:
         if self.gate:
             self.gate.stop()
             self.gate = None
+        if self.board:
+            self.board.stop()
+            self.board = None
+
+
+def start_board(cfg: Config) -> board.Board | None:
+    """아이디어 보드를 띄운다. Tailscale이 없거나 포트가 이미 쓰이면(따로 띄운 보드) 조용히 건너뛴다."""
+    host = approval.tailscale_ip()
+    if host is None:
+        return None
+    b = board.Board(host=host, port=cfg.board_port, token=approval.load_token(TOKEN_FILE), ideas_root=PIPELINE.parent,
+                    target=cfg.target_passed, approval_port=cfg.approval_port)
+    try:
+        b.start()
+    except OSError:
+        log.info("보드 포트 %d가 이미 쓰이고 있어 루프에서는 띄우지 않는다", cfg.board_port)
+        return None
+    log.info("아이디어 보드: %s", b.url.split("?")[0])
+    return b
 
 
 # ── 작업 세션 보호 ────────────────────────────────────────────────────────────
 
-PROTECTED_DIRS = [HARNESS / "nightshift", HARNESS / "state", HARNESS / ".venv", Path.home() / ".config" / "systemd"]
+PROTECTED_DIRS = [HARNESS / "autoloop", HARNESS / "state", HARNESS / ".venv", Path.home() / ".config" / "systemd"]
 PROTECTED_FILES = [
-    HARNESS / "nightshift.toml", HARNESS / "install-systemd.sh", HARNESS / "pyproject.toml", HARNESS / "uv.lock",
-    HARNESS / "prompts" / "night-job.md",
+    HARNESS / "autoloop.toml", HARNESS / "pyproject.toml", HARNESS / "uv.lock", HARNESS / "prompts" / "job.md",
     # settings의 hooks는 다음 세션에서 PreToolUse 필터 밖에서 실행된다
     REPO / ".claude" / "settings.json", REPO / ".claude" / "settings.local.json",
     Path.home() / ".claude" / "settings.json", Path.home() / ".claude" / "settings.local.json",
@@ -132,7 +146,7 @@ BASH_FORBIDDEN = re.compile(
     # push는 git 서브커맨드 자리에서만 잡는다 (git -C . push, git --no-pager push). slug·커밋 메시지 속 push는 허용
     r"\bgit\b(?:\s+-\S+(?:\s+[^-\s]\S*)?)*\s+push\b"
     r"|\bsystemctl\b|\bcrontab\b|\bloginctl\b|\.credentials|\.config/systemd"
-    r"|harness/(nightshift|state|prompts|install-systemd|pyproject|uv\.lock|\.venv)|nightshift\.toml"
+    r"|harness/(autoloop|state|prompts|pyproject|uv\.lock|\.venv)|autoloop\.toml"
     r"|\.claude/settings(\.local)?\.json|approval-token"
 )
 
@@ -146,17 +160,17 @@ def _is_protected(path_str: str) -> bool:
 
 
 def deny_reason(tool_name: str, tool_input: dict) -> str | None:
-    """야간 작업 세션에서 막을 도구 호출이면 이유를, 아니면 None."""
+    """자동 루프 작업 세션에서 막을 도구 호출이면 이유를, 아니면 None."""
     if tool_name in ("Write", "Edit", "MultiEdit", "NotebookEdit"):
         if _is_protected(tool_input.get("file_path") or tool_input.get("notebook_path") or ""):
-            return "야간 루프는 자기 감시 코드·설정·승인 토큰·systemd·자격증명을 수정할 수 없다"
+            return "자동 루프는 자기 감시 코드·설정·승인 토큰·systemd·자격증명을 수정할 수 없다"
     elif tool_name == "Read":
         path = tool_input.get("file_path", "")
         if _is_protected(path) and (".credentials" in path or "approval-token" in path):
-            return "야간 루프는 자격증명·승인 토큰을 읽을 수 없다"
+            return "자동 루프는 자격증명·승인 토큰을 읽을 수 없다"
     elif tool_name == "Bash":
         if BASH_FORBIDDEN.search(tool_input.get("command", "")):
-            return "야간 루프에서 금지된 명령 (git push, systemctl, 감시 코드·설정·자격증명·승인 토큰 접근)"
+            return "자동 루프에서 금지된 명령 (git push, systemctl, 감시 코드·설정·자격증명·승인 토큰 접근)"
     return None
 
 
@@ -169,11 +183,11 @@ async def guard_hook(input_data, tool_use_id, context):
     return {}
 
 
-NIGHT_APPEND = """
-# 야간 자동 루프 모드
-- 사용자는 퇴근해서 자리에 없다. 질문하지 말고, 필요한 판단은 가정을 세워 진행한 뒤 `PROGRESS.md`의 「야간 가정」에 적는다.
-- CLAUDE.md의 비싼 스킬은 이 모드에서 사전 승인되어 있다. `deepdive` deep의 Plan-review gate는 사용자 대신 독립 서브에이전트가 검토한다(CLAUDE.md 「야간 자동 루프」 절).
-- 러너가 시간 규칙에 따라 언제든 작업을 중단시킬 수 있다. 산출물은 자주 파일로 쓰고 `PROGRESS.md`를 갱신해 끊겨도 이어갈 수 있게 한다.
+LOOP_APPEND = """
+# 자동 루프 모드
+- 무인 실행이다. 질문하지 말고, 필요한 판단은 가정을 세워 진행한 뒤 `PROGRESS.md`의 「자동 루프 가정」에 적는다.
+- CLAUDE.md의 비싼 스킬은 이 모드에서 사전 승인되어 있다. `deepdive` deep의 Plan-review gate는 사용자 대신 독립 서브에이전트가 검토한다(CLAUDE.md 「자동 루프」 절).
+- 러너가 한도 소진·작업 최대 길이에 따라 언제든 작업을 중단시킬 수 있다. 산출물은 자주 파일로 쓰고 `PROGRESS.md`를 갱신해 끊겨도 이어갈 수 있게 한다.
 - S5(실증: 프로토타입·인터뷰)는 실행하지 않는다. `git push`는 하지 않는다.
 """
 
@@ -189,7 +203,7 @@ def job_options(cfg: Config) -> ClaudeAgentOptions:
         permission_mode="bypassPermissions",
         disallowed_tools=deny_rules,
         hooks={"PreToolUse": [HookMatcher(matcher="Write|Edit|MultiEdit|NotebookEdit|Read|Bash", hooks=[guard_hook])]},
-        system_prompt={"type": "preset", "preset": "claude_code", "append": NIGHT_APPEND},
+        system_prompt={"type": "preset", "preset": "claude_code", "append": LOOP_APPEND},
         model=cfg.model,
     )
 
@@ -197,10 +211,8 @@ def job_options(cfg: Config) -> ClaudeAgentOptions:
 # ── SDK 호출 ─────────────────────────────────────────────────────────────────
 
 
-async def probe(night: Night) -> bool:
-    """가장 싼 호출 하나로 한도 상태를 읽는다. 호출 자체가 5시간 창을 열 수 있으므로 시간 규칙 안에서만 부른다."""
-    if not night.may_request():
-        return False
+async def probe(night: LoopState) -> bool:
+    """가장 싼 호출 하나로 한도 상태를 읽는다."""
     STATE_DIR.mkdir(parents=True, exist_ok=True)
     opts = ClaudeAgentOptions(cwd=str(STATE_DIR), setting_sources=[], max_turns=1, tools=[], model=night.cfg.probe_model)
     got = False
@@ -219,10 +231,10 @@ async def probe(night: Night) -> bool:
     return got
 
 
-async def run_job(night: Night, d: Decision, shutdown: anyio.Event) -> str:
+async def run_job(night: LoopState, d: Decision, shutdown: anyio.Event) -> str:
     """'done' | 'stopped'(러너가 규칙대로 끊음) | 'error'."""
     cfg = night.cfg
-    job_deadline = min(d.until, now_in(cfg) + cfg.job_max)
+    job_deadline = now_in(cfg) + cfg.job_max
     prompt = (REPO / cfg.prompt_file).read_text()
     u = night.usage
     log.info("작업 시작 (최대 %s까지, 주간 %s)", job_deadline.strftime("%H:%M"),
@@ -292,19 +304,19 @@ async def run_job(night: Night, d: Decision, shutdown: anyio.Event) -> str:
     return "stopped" if stop_reason else status
 
 
-async def ask_approval(night: Night, d: Decision, shutdown: anyio.Event) -> bool:
-    """승인 페이지에 요청을 올리고 답을 기다린다. 승인이면 True. 거절·무응답·페이지 불가는 False."""
+async def ask_approval(night: LoopState, d: Decision, shutdown: anyio.Event) -> bool:
+    """승인 페이지에 요청을 올리고 답이 올 때까지 기다린다. 승인이면 True. 거절·종료 신호·페이지 불가는 False."""
     cfg = night.cfg
     if night.gate is None:
         host = approval.tailscale_ip()
         if host is None:
-            log.error("Tailscale IP를 얻지 못해 승인 페이지를 열 수 없다. 오늘 밤은 종료")
+            log.error("Tailscale IP를 얻지 못해 승인 페이지를 열 수 없다. 루프를 끝낸다")
             return False
         gate = approval.ApprovalGate(host=host, port=cfg.approval_port, token=approval.load_token(TOKEN_FILE))
         try:
             gate.start()
         except OSError:
-            log.exception("승인 페이지를 열지 못함. 오늘 밤은 종료")
+            log.exception("승인 페이지를 열지 못함. 루프를 끝낸다")
             return False
         night.gate = gate
 
@@ -313,20 +325,19 @@ async def ask_approval(night: Night, d: Decision, shutdown: anyio.Event) -> bool
         "주간 사용률": f"{u.seven_util:.0%} (기준 {cfg.approval_threshold:.0%})" if u.seven_util is not None else "?",
         "주간 초기화": f"{u.seven_reset:%m-%d %a %H:%M}" if u.seven_reset else "?",
         "5시간 창": f"{u.five_util:.0%}, {u.five_reset:%H:%M} 종료" if u.five_util is not None and u.five_reset else "?",
-        "응답 기한": f"{d.until:%m-%d %H:%M} (지나면 오늘 밤 종료)",
         "통과(실증 대기)": f"{passed_count()} / {cfg.target_passed}",
         "작업 1건": f"최대 {int(cfg.job_max.total_seconds() // 60)}분",
     })
-    log.warning("승인 대기 (%s까지): %s", d.until.strftime("%H:%M"), night.gate.url.split("?")[0])
+    log.warning("승인 대기: %s", night.gate.url.split("?")[0])
 
-    while not shutdown.is_set() and now_in(cfg) < d.until:
+    while not shutdown.is_set():
         if req.choice in ("approve", "deny"):
             log.info("승인 요청 %s: %s", req.id, approval.LABEL[req.choice])
             return req.choice == "approve"
         with anyio.move_on_after(APPROVAL_POLL_S):
             await shutdown.wait()
     night.gate.expire(req)
-    log.info("승인 요청 %s: 응답 기한까지 답이 없어 오늘 밤 종료", req.id)
+    log.info("승인 요청 %s: 답을 받기 전에 러너가 멈춤", req.id)
     return False
 
 
@@ -339,10 +350,11 @@ async def run(cfg: Config, dry_run: bool) -> None:
         try:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
-            log.error("다른 nightshift가 이미 실행 중이라 종료한다")
+            log.error("다른 autoloop가 이미 실행 중이라 종료한다")
             return
 
-        night = Night(cfg)
+        night = LoopState(cfg)
+        night.board = start_board(cfg)
         shutdown = anyio.Event()
 
         async def on_signal() -> None:
@@ -366,13 +378,8 @@ async def run(cfg: Config, dry_run: bool) -> None:
             night.close()
 
 
-async def loop(night: Night, shutdown: anyio.Event, dry_run: bool) -> None:
+async def loop(night: LoopState, shutdown: anyio.Event, dry_run: bool) -> None:
     cfg = night.cfg
-
-    first = night.decision(starting_job=True)  # 한도 정보가 없으므로 시간 규칙만 STOP을 낼 수 있다
-    if first.action is Action.STOP:
-        log.info("시작하지 않음: %s", first.reason)
-        return
 
     failures = idle = 0
     approved = False  # 다음 작업 1건에 대한 사용자 승인
@@ -388,16 +395,13 @@ async def loop(night: Night, shutdown: anyio.Event, dry_run: bool) -> None:
             if d.action is Action.PROBE:
                 log.error("한도 정보를 읽지 못해 종료 (fail-closed): %s", d.reason)
                 return
-        log.info("판정 %s until=%s — %s", d.action.value, d.until.strftime("%m-%d %H:%M"), d.reason)
+        log.info("판정 %s — %s", d.action.value, d.reason)
         if d.action is Action.STOP:
             return
         if d.action is Action.WAIT:
             with anyio.move_on_after(max(1.0, (d.until - now_in(cfg)).total_seconds() + 30)):
                 await shutdown.wait()
             continue
-        if d.until - now_in(cfg) < cfg.min_job:
-            log.info("남은 시간이 min_job보다 짧아 종료")
-            return
         if d.action is Action.ASK:
             if dry_run:
                 log.info("[dry-run] 여기서 승인을 요청했을 것")
@@ -417,7 +421,7 @@ async def loop(night: Night, shutdown: anyio.Event, dry_run: bool) -> None:
             idle += 1
             log.warning("작업이 ideas/ 아래 아무것도 바꾸지 않음 (%d/%d)", idle, MAX_IDLE_JOBS)
             if idle >= MAX_IDLE_JOBS:
-                log.error("진전 없는 작업이 연속돼 오늘 밤은 종료 (진행 가능한 아이디어가 모두 막혔을 수 있음)")
+                log.error("진전 없는 작업이 연속돼 루프를 끝낸다 (진행 가능한 아이디어가 모두 막혔을 수 있음)")
                 return
         elif result != "error":
             idle = 0
@@ -426,7 +430,7 @@ async def loop(night: Night, shutdown: anyio.Event, dry_run: bool) -> None:
             continue
         failures += 1
         if failures >= MAX_CONSECUTIVE_FAILURES:
-            log.error("작업이 %d번 연속 실패해 오늘 밤은 종료", failures)
+            log.error("작업이 %d번 연속 실패해 루프를 끝낸다", failures)
             return
         with anyio.move_on_after(FAILURE_BACKOFF_S):
             await shutdown.wait()

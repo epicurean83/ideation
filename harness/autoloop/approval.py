@@ -163,7 +163,7 @@ def render(gate: ApprovalGate) -> str:
         f"<li>{r.created_at:%m-%d %H:%M} · {esc(LABEL[r.choice])}</li>" for r in reversed(gate.history) if r.choice
     )
     return f"""<!doctype html><html lang="ko"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>nightshift 승인</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>autoloop 승인</title>
 <style>
 body{{font-family:system-ui,sans-serif;margin:0;padding:16px;background:#f6f6f4;color:#1b1b1b}}
 h1{{font-size:1.25rem;margin:.2em 0}} .muted{{color:#666}} table{{border-collapse:collapse;margin:12px 0;width:100%}}

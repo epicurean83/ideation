@@ -11,12 +11,12 @@ import anyio
 import pytest
 from claude_agent_sdk import RateLimitEvent, RateLimitInfo, ResultMessage
 
-import nightshift.approval as A
-import nightshift.runner as R
-from nightshift.policy import Action, Config
+import autoloop.approval as A
+import autoloop.runner as R
+from autoloop.policy import Action, Config
 
-CFG = Config.load(Path(__file__).parents[1] / "nightshift.toml")
-NIGHT = datetime(2026, 9, 15, 22, 30, tzinfo=CFG.tz)  # 화요일 밤
+CFG = Config.load(Path(__file__).parents[1] / "autoloop.toml")
+NOW = datetime(2026, 9, 15, 14, 30, tzinfo=CFG.tz)  # 화요일 낮 — 시간대 제한이 없다
 WEEK_RESET = int(datetime(2026, 9, 22, 4, tzinfo=CFG.tz).timestamp())
 
 
@@ -84,10 +84,10 @@ class FakeClient:
 def night(tmp_path, monkeypatch):
     monkeypatch.setattr(R, "STATE_DIR", tmp_path)
     monkeypatch.setattr(R, "EVENTS_FILE", tmp_path / "events.jsonl")
-    monkeypatch.setattr(R, "LOCK_FILE", tmp_path / "nightshift.lock")
+    monkeypatch.setattr(R, "LOCK_FILE", tmp_path / "autoloop.lock")
     monkeypatch.setattr(R, "TOKEN_FILE", tmp_path / "approval-token")
     monkeypatch.setattr(R, "PIPELINE", tmp_path / "ideas" / "PIPELINE.md")
-    monkeypatch.setattr(R, "now_in", lambda cfg: NIGHT)
+    monkeypatch.setattr(R, "now_in", lambda cfg: NOW)
     monkeypatch.setattr(R, "ClaudeSDKClient", FakeClient)
     monkeypatch.setattr(R, "CHECK_EVERY_S", 0.01)
     monkeypatch.setattr(R, "INTERRUPT_GRACE_S", 0.2)
@@ -100,7 +100,7 @@ def night(tmp_path, monkeypatch):
     FakeClient.probe_util, FakeClient.job_script, FakeClient.job_delay = 0.30, [], 0.0
     FakeClient.interrupt_raises = FakeClient.interrupted = False
     FakeClient.probes = FakeClient.jobs = 0
-    n = R.Night(cfg)
+    n = R.LoopState(cfg)
     yield n
     n.close()
 
@@ -174,18 +174,22 @@ def test_deny_ends_the_night(night, monkeypatch):
     assert calls == []
 
 
-def test_no_answer_until_deadline_ends_the_night(night, monkeypatch):
+def test_approval_waits_until_answered_or_stopped(night, monkeypatch):
     FakeClient.probe_util = 0.75
-    ticks = {"n": 0}
-
-    def clock(cfg):
-        ticks["n"] += 1
-        return NIGHT if ticks["n"] < 40 else datetime(2026, 9, 16, 3, 56, tzinfo=CFG.tz)  # 응답 기한 03:55 지남
-
-    monkeypatch.setattr(R, "now_in", clock)
     calls = []
     monkeypatch.setattr(R, "run_job", productive_job_factory(calls))
-    run(R.loop, night, anyio.Event(), False)
+
+    async def main():
+        shutdown = anyio.Event()
+        async with anyio.create_task_group() as tg:
+            async def stop_later():
+                await anyio.sleep(0.3)  # 답이 없는 동안 계속 기다린다 (기한 없음)
+                assert night.gate.pending is not None
+                shutdown.set()
+            tg.start_soon(stop_later)
+            await R.loop(night, shutdown, False)
+
+    run(main)
     assert calls == [] and night.gate.history[-1].choice == "expired"
 
 
@@ -230,23 +234,39 @@ def test_approval_page_escapes_html(tmp_path):
 # ── 작업 세션 ─────────────────────────────────────────────────────────────────
 
 
-def test_running_job_is_interrupted_by_time_rule(night, monkeypatch):
-    ticks = {"n": 0}
+def rejected_event(until: datetime) -> RateLimitEvent:
+    raw = {"status": "rejected", "rateLimitType": "five_hour", "resetsAt": int(until.timestamp())}
+    return RateLimitEvent(rate_limit_info=RateLimitInfo(status="rejected", raw=raw), uuid="u", session_id="s")
 
-    def clock(cfg):
-        ticks["n"] += 1
-        return NIGHT if ticks["n"] < 5 else datetime(2026, 9, 16, 3, 56, tzinfo=CFG.tz)
 
+def test_running_job_is_interrupted_when_limit_is_hit(night):
     async def main():
         await R.probe(night)
         d = night.decision(starting_job=True)
         assert d.action is Action.RUN
+        FakeClient.job_script = [object()] * 3 + [rejected_event(NOW + timedelta(hours=2))] + [object()] * 200
+        FakeClient.job_delay = 0.01
+        return await R.run_job(night, d, anyio.Event())
+
+    assert run(main) == "stopped" and FakeClient.interrupted
+
+
+def test_job_max_length_interrupts(night, monkeypatch):
+    ticks = {"n": 0}
+
+    def clock(cfg):
+        ticks["n"] += 1
+        return NOW if ticks["n"] < 3 else NOW + CFG.job_max + timedelta(minutes=1)
+
+    async def main():
+        await R.probe(night)
+        d = night.decision(starting_job=True)
         monkeypatch.setattr(R, "now_in", clock)
         FakeClient.job_script = [object()] * 200
         FakeClient.job_delay = 0.01
         return await R.run_job(night, d, anyio.Event())
 
-    assert run(main) == "stopped" and FakeClient.interrupted
+    assert run(main) == "stopped"
 
 
 def test_job_crossing_threshold_is_finished(night):
@@ -368,15 +388,16 @@ def test_passed_count_ignores_spacing(tmp_path):
 
 
 @pytest.mark.parametrize("tool,inp", [
-    ("Write", {"file_path": str(R.HARNESS / "nightshift" / "policy.py")}),
-    ("Edit", {"file_path": "harness/nightshift.toml"}),
-    ("Write", {"file_path": "~/.config/systemd/user/ideation-nightshift.timer"}),
+    ("Write", {"file_path": str(R.HARNESS / "autoloop" / "policy.py")}),
+    ("Edit", {"file_path": "harness/autoloop.toml"}),
+    ("Write", {"file_path": "~/.config/systemd/user/ideation-autoloop.timer"}),
     ("Read", {"file_path": "~/.claude/.credentials.json"}),
     ("Read", {"file_path": str(R.HARNESS / "state" / "approval-token")}),
     ("Bash", {"command": "cat harness/state/approval-token"}),
     ("Bash", {"command": "git push origin HEAD"}),
-    ("Bash", {"command": "systemctl --user stop ideation-nightshift-kill.timer"}),
-    ("Bash", {"command": "sed -i s/0.70/0.99/ harness/nightshift.toml"}),
+    ("Bash", {"command": "systemctl --user stop ideation-autoloop-kill.timer"}),
+    ("Bash", {"command": "sed -i s/0.70/0.99/ harness/autoloop.toml"}),
+    ("Write", {"file_path": "harness/prompts/job.md"}),
     ("Write", {"file_path": str(R.HARNESS / ".venv" / "lib" / "python3.12" / "site-packages" / "evil.pth")}),
     ("Write", {"file_path": ".claude/settings.json"}),
     ("Edit", {"file_path": "~/.claude/settings.json"}),

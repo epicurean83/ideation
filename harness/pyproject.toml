@@ -1,9 +1,12 @@
 [project]
-name = "nightshift"
+name = "autoloop"
 version = "0.1.0"
-description = "야간 자동 아이데이션 루프 — 근무 시간 토큰을 건드리지 않는 시간 창에서만 돈다"
+description = "신사업 아이데이션 자동 루프 — 주간 한도 70% 이상이면 작업마다 승인"
 requires-python = ">=3.12"
-dependencies = ["claude-agent-sdk>=0.2.152"]
+dependencies = [
+    "claude-agent-sdk>=0.2.152",
+    "markdown-it-py>=3",
+]
 
 [dependency-groups]
 dev = ["pytest>=8"]
