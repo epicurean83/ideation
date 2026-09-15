@@ -7,25 +7,18 @@ workdays = [0, 1, 2, 3, 4, 5, 6]  # 월=0 … 일=6. 주말에 근무하지 않�
 
 safety_margin_minutes = 5   # 모든 경계에서 이만큼 일찍 멈춘다
 window_hours = 5            # 구독 세션 한도 창 길이
-job_max_minutes = 90        # 작업 1건 최대 길이. 짧을수록 한도 정보가 자주 갱신된다
+job_max_minutes = 90        # 작업 1건 최대 길이
 min_job_minutes = 15        # 남은 시간이 이보다 짧으면 새 작업을 시작하지 않는다
-probe_every_minutes = 3     # 작업 중 이 간격으로 주간 사용률을 다시 읽는다 (Haiku 최소 호출)
-usage_max_age_minutes = 10  # 주간 사용률이 이보다 오래되면 멈춘다 (fail-closed)
+usage_max_age_minutes = 10  # 작업 시작 판정에 쓰는 주간 사용률이 이보다 오래되면 다시 읽는다
 
 [weekly]
-# 사용자가 근무일 하루(09~22시)에 쓰는 주간 한도 비율의 초기 추정치.
-# 2026-09-14 월 18:47 관측: 주간 70% 사용, 초기화 화 04:00 → 6.6일 평균 약 10.6%/일 (1주 표본, 신뢰도 Low).
-daily_usage_default = 0.11
-reserve_safety = 0.03       # 주간 한도에서 누구도 쓰지 않는 여유분
-job_cost_default = 0.01     # 작업 1건 주간 사용률 예상치 초기값. 작업 전후 실측으로 학습한다
-min_headroom = 0.01         # 새 작업을 시작하려면 상한까지 최소 이만큼 남아야 한다 (사용률은 1% 단위로 옴)
-heavy_headroom = 0.05       # 여유가 이보다 작으면 crucible Decision·deepdive를 hook으로 막는다
-stop_margin = 0.005         # 작업 중 상한까지 여유가 이 값 이하면 interrupt. 초과분(probe 간격 동안의 소비)은 reserve_safety가 흡수한다
-learn_min_samples = 3       # 실측 표본(근무일 사용량, 작업 비용)이 이만큼 쌓이면 기본값 대신 실측을 쓴다
-learn_multiplier = 1.2      # 실측 75백분위에 곱하는 안전 계수
+# 2026-09-15 사용자 결정: 주간 사용률이 이 값 미만이면 루프가 자유롭게 쓰고,
+# 이 값 이상이면 작업 1건을 시작할 때마다 승인 페이지에서 사용자 승인을 받는다.
+approval_threshold = 0.70
+approval_port = 8765        # Tailscale IP에만 바인딩한다
 
 [loop]
 target_passed = 10          # PIPELINE.md에 `통과(실증 대기)`가 이만큼 쌓이면 멈춘다
 model = ""                  # 비우면 사용자 기본 모델
-probe_model = "claude-haiku-4-5-20251001"  # 야간 시작 시 한도 상태만 읽는 최소 호출
+probe_model = "claude-haiku-4-5-20251001"  # 작업 전후로 한도 상태만 읽는 최소 호출
 prompt_file = "harness/prompts/night-job.md"

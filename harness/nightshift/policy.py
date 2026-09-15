@@ -1,10 +1,6 @@
 """언제 토큰을 써도 되는지 판정한다. 부수효과 없는 순수 함수만 둔다.
 
-지켜야 할 불변식은 하나다: 사용자가 근무를 시작하는 시각(work_start)에
-사용자의 5시간 창과 주간 한도 몫이 루프 때문에 줄어 있으면 안 된다.
-정보가 없거나 오래됐으면 항상 멈추는 쪽(fail-closed)으로 판정한다.
-
-5시간 창 규칙
+5시간 창 규칙 — 사용자가 근무를 시작하는 시각(work_start)에 5시간 창이 비어 있어야 한다
   창은 "직전 창이 끝난 뒤 첫 요청" 시각에 열린다. 2026-09-14 로컬 기록으로 복원하면
   종료 시각 = 시작 시각을 정시로 내림 + 5h 였다(16:01:50 시작 → 21:00 종료).
   아래 계산은 내림 없이 시작 + 5h로 잡으므로 실제보다 늦게 끝난다고 가정한다(보수적).
@@ -13,20 +9,17 @@
   - 이미 열린 창의 종료 시각 R을 알고 R <= D 이면, R 직전까지는 그 창 안이므로 안전하다.
   - 그 밖에는 요청 하나가 사용자 아침 창을 열거나 갉아먹을 수 있으므로 멈춘다.
 
-주간 한도 규칙
-  주간 초기화 전까지 남은 근무일 W, 남은 야간 N에 대해
-  루프 몫 = 1 - reserve_safety - daily × W - 야간 시작 시 사용률,
-  이번 야간 상한 = 야간 시작 사용률 + 루프 몫 / N.
-  작업을 새로 시작하려면 상한까지 여유가 작업 1건 예상 비용 이상이어야 하고,
-  작업 중에는 사용률이 상한 - stop_margin에 닿으면 멈춘다.
-  초기화 직전 야간(W=0, N=1)에는 어차피 사라질 잔량을 전부 쓸 수 있다.
+주간 한도 규칙 (2026-09-15 사용자 결정)
+  - 주간 사용률 < approval_threshold(70%): 새 작업을 자유롭게 시작한다.
+  - 주간 사용률 ≥ approval_threshold: 작업 1건을 시작할 때마다 사용자 승인이 필요하다(Action.ASK).
+  - 이미 시작한 작업은 도중에 70%를 넘어도 끝까지 한다. 확인 단위는 "작업 1건"이다.
+  - 작업을 시작하려는데 주간 사용률 정보가 없거나 오래됐으면 먼저 읽는다(Action.PROBE, fail-closed).
 """
 
 from __future__ import annotations
 
-import math
 import tomllib
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, time, timedelta
 from enum import Enum
 from pathlib import Path
@@ -44,15 +37,8 @@ class Config:
     job_max: timedelta
     min_job: timedelta
     usage_max_age: timedelta
-    probe_every: timedelta
-    daily_usage_default: float
-    reserve_safety: float
-    job_cost_default: float
-    min_headroom: float
-    heavy_headroom: float
-    stop_margin: float
-    learn_min_samples: int
-    learn_multiplier: float
+    approval_threshold: float
+    approval_port: int
     target_passed: int
     model: str | None
     probe_model: str
@@ -72,15 +58,8 @@ class Config:
             job_max=timedelta(minutes=raw["job_max_minutes"]),
             min_job=timedelta(minutes=raw["min_job_minutes"]),
             usage_max_age=timedelta(minutes=raw["usage_max_age_minutes"]),
-            probe_every=timedelta(minutes=raw["probe_every_minutes"]),
-            daily_usage_default=weekly["daily_usage_default"],
-            reserve_safety=weekly["reserve_safety"],
-            job_cost_default=weekly["job_cost_default"],
-            min_headroom=weekly["min_headroom"],
-            heavy_headroom=weekly["heavy_headroom"],
-            stop_margin=weekly["stop_margin"],
-            learn_min_samples=weekly["learn_min_samples"],
-            learn_multiplier=weekly["learn_multiplier"],
+            approval_threshold=weekly["approval_threshold"],
+            approval_port=weekly["approval_port"],
             target_passed=loop["target_passed"],
             model=loop["model"] or None,
             probe_model=loop["probe_model"],
@@ -134,6 +113,7 @@ class Usage:
 
 class Action(Enum):
     RUN = "run"
+    ASK = "ask"      # 주간 사용률이 기준 이상 → 이 작업을 시작해도 되는지 사용자 승인 필요
     PROBE = "probe"  # 주간 정보가 없거나 오래됨 → 한 번 읽고 다시 판정. 그래도 이러면 멈춘다
     WAIT = "wait"
     STOP = "stop"
@@ -144,11 +124,6 @@ class Decision:
     action: Action
     until: datetime
     reason: str
-    detail: dict = field(default_factory=dict)
-
-    @property
-    def heavy_allowed(self) -> bool:
-        return bool(self.detail.get("heavy_allowed"))
 
 
 # ── 시각 계산 ────────────────────────────────────────────────────────────────
@@ -193,53 +168,6 @@ def spend_until(now: datetime, usage: Usage, cfg: Config) -> tuple[datetime, str
     return fresh_limit, f"새 창을 열어도 {d:%H:%M} 전에 끝나는 마지막 시각"
 
 
-# ── 주간 한도 ────────────────────────────────────────────────────────────────
-
-
-def count_starts(t: time, start: datetime, end: datetime, cfg: Config, workdays_only: bool) -> int:
-    """[start, end) 안에 있는 매일 t 시각의 개수."""
-    n = 0
-    day = start.astimezone(cfg.tz) - timedelta(days=1)
-    while day.date() <= end.date():
-        at = _at(day, t, cfg)
-        if start <= at < end and (not workdays_only or at.weekday() in cfg.workdays):
-            n += 1
-        day += timedelta(days=1)
-    return n
-
-
-def night_start(now: datetime, cfg: Config) -> datetime:
-    """now가 속한 야간의 시작 시각(가장 최근 work_end)."""
-    now = now.astimezone(cfg.tz)
-    today_end = _at(now, cfg.work_end, cfg)
-    return today_end if now >= today_end else today_end - timedelta(days=1)
-
-
-def reset_key(reset: datetime) -> str:
-    """주간 초기화 시각을 정시로 맞춘 키. resetsAt이 몇 초 흔들려도 같은 주간으로 본다."""
-    return str(round(reset.timestamp() / 3600))
-
-
-def learned(samples: list[float], default: float, cfg: Config) -> float:
-    """표본이 충분하면 nearest-rank 75백분위 × 안전 계수, 아니면 기본값."""
-    if len(samples) < cfg.learn_min_samples:
-        return default
-    ordered = sorted(samples)
-    return ordered[max(0, math.ceil(0.75 * len(ordered)) - 1)] * cfg.learn_multiplier
-
-
-def daily_usage(samples: list[float], cfg: Config) -> float:
-    return learned(samples, cfg.daily_usage_default, cfg)
-
-
-def weekly_ceiling(now: datetime, seven_reset: datetime, base_util: float, daily: float, cfg: Config) -> dict:
-    work_days = count_starts(cfg.work_start, next_work_start(now, cfg), seven_reset, cfg, workdays_only=True)
-    nights = max(1, count_starts(cfg.work_end, night_start(now, cfg), seven_reset, cfg, workdays_only=False))
-    share = 1 - cfg.reserve_safety - daily * work_days - base_util
-    ceiling = base_util + max(0.0, share) / nights
-    return {"ceiling": ceiling, "work_days": work_days, "nights": nights, "loop_share": share, "daily": daily}
-
-
 def usage_missing(now: datetime, usage: Usage, cfg: Config) -> str | None:
     if usage.seven_util is None or usage.seven_reset is None or usage.observed_at is None:
         return "주간 사용률 정보 없음"
@@ -253,20 +181,11 @@ def usage_missing(now: datetime, usage: Usage, cfg: Config) -> str | None:
 # ── 종합 판정 ────────────────────────────────────────────────────────────────
 
 
-def decide(
-    now: datetime,
-    usage: Usage,
-    base_util: float | None,
-    cfg: Config,
-    *,
-    daytime_samples: list[float] = (),
-    job_cost_samples: list[float] = (),
-    starting_job: bool,
-) -> Decision:
+def decide(now: datetime, usage: Usage, cfg: Config, *, starting_job: bool, approved: bool = False) -> Decision:
     """지금 토큰을 써도 되는가.
 
-    base_util: 이번 주간 기간에서 이 야간이 시작될 때의 주간 사용률.
-    starting_job: 새 작업을 시작하려는가(여유 ≥ 작업 1건 예상 비용 요구), 도는 작업을 계속하려는가.
+    starting_job: 새 작업을 시작하려는가(주간 규칙 적용), 도는 작업을 계속하려는가(시간·한도 소진만 본다).
+    approved: 이번에 시작할 작업 1건에 대해 사용자가 이미 승인했는가.
     """
     if is_work_time(now, cfg):
         return Decision(Action.STOP, now, "근무 시간")
@@ -280,21 +199,14 @@ def decide(
             return Decision(Action.WAIT, usage.rejected_until, "한도 소진, 초기화까지 대기")
         return Decision(Action.STOP, now, "한도 소진, 오늘 밤 안에 초기화되지 않음")
 
+    if not starting_job:
+        return Decision(Action.RUN, until, why)
+
     if missing := usage_missing(now, usage, cfg):
         return Decision(Action.PROBE, until, missing)
 
-    base = usage.seven_util if base_util is None else base_util
-    w = weekly_ceiling(now, usage.seven_reset, base, daily_usage(list(daytime_samples), cfg), cfg)
-    headroom = w["ceiling"] - usage.seven_util
-    job_cost = learned(list(job_cost_samples), cfg.job_cost_default, cfg)
-    need = max(cfg.min_headroom, job_cost) if starting_job else cfg.stop_margin
-    w |= {"headroom": headroom, "need": need, "job_cost": job_cost, "heavy_allowed": headroom >= cfg.heavy_headroom}
+    if usage.seven_util >= cfg.approval_threshold and not approved:
+        return Decision(Action.ASK, until,
+                        f"주간 사용률 {usage.seven_util:.0%} ≥ {cfg.approval_threshold:.0%}, 작업 1건마다 승인 필요")
 
-    if (headroom < need) if starting_job else (headroom <= need):
-        msg = (f"이번 야간 주간 몫 부족 (사용 {usage.seven_util:.1%}, 상한 {w['ceiling']:.1%}, "
-               f"여유 {headroom:.1%} < 필요 {need:.1%})")
-        if usage.seven_reset < until:
-            return Decision(Action.WAIT, usage.seven_reset, msg + ", 주간 초기화 후 재계산", w)
-        return Decision(Action.STOP, now, msg, w)
-
-    return Decision(Action.RUN, until, why, w)
+    return Decision(Action.RUN, until, why)

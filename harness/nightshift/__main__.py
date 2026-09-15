@@ -1,4 +1,4 @@
-"""uv run --project harness python -m nightshift {run,plan} [...]"""
+"""uv run --directory harness python -m nightshift {run,plan,approval-url} [...]"""
 
 from __future__ import annotations
 
@@ -9,8 +9,9 @@ from datetime import datetime
 
 import anyio
 
-from .policy import Config, Usage, daily_usage, deadline, decide, is_work_time, learned, weekly_ceiling
-from .runner import EVENTS_FILE, HARNESS, STATE_DIR, load_state, passed_count, run
+from . import approval
+from .policy import Config, Usage, deadline, decide, is_work_time
+from .runner import EVENTS_FILE, HARNESS, STATE_DIR, TOKEN_FILE, passed_count, run
 
 
 def last_usage(cfg: Config) -> Usage:
@@ -39,41 +40,46 @@ def plan(cfg: Config, at: datetime | None) -> None:
     print(f"  루프 종료: {min(t, d):%H:%M} (이후 요청은 아침 창을 연다)")
 
     u = last_usage(cfg)
-    state = load_state()
-    samples = state.get("daytime_samples", [])
-    job_costs = state.get("job_cost_samples", [])
-    if u.seven_reset and u.seven_util is not None:
-        print(f"\n마지막 관측 ({u.observed_at:%m-%d %H:%M}): 주간 {u.seven_util:.0%}, 초기화 {u.seven_reset:%m-%d %a %H:%M}")
-        daily = daily_usage(samples, cfg)
-        if u.seven_reset > start:
-            w = weekly_ceiling(start, u.seven_reset, u.seven_util, daily, cfg)
-            print(f"  초기화 전: 남은 근무일 {w['work_days']} × {daily:.1%} 예약, 남은 야간 {w['nights']}"
-                  f" → 이번 야간 주간 상한 {w['ceiling']:.1%} (루프가 더 쓸 수 있는 몫 {max(0, w['ceiling'] - u.seven_util):.1%})")
-        if u.seven_reset < d:
-            print(f"  {u.seven_reset:%H:%M}에 주간이 초기화되면 새 주간 기준으로 다시 계산한다")
+    print(f"\n주간 사용률 {cfg.approval_threshold:.0%} 미만: 자유 실행 / 이상: 작업 1건마다 승인 페이지에서 승인")
+    if u.seven_util is not None and u.seven_reset:
+        if u.seven_reset <= start:
+            state = "그 뒤 주간 초기화가 지나 첫 probe에서 다시 읽는다"
+        else:
+            state = "승인 필요" if u.seven_util >= cfg.approval_threshold else "자유 실행"
+        print(f"마지막 관측 ({u.observed_at:%m-%d %H:%M}): 주간 {u.seven_util:.0%}, 초기화 {u.seven_reset:%m-%d %a %H:%M}"
+              f" → {state}")
     else:
-        print("\n한도 관측 기록 없음 — 첫 야간 실행 때 probe로 채운다")
-    print(f"\n근무 시간 사용량 표본 {len(samples)}개, 적용값 {daily_usage(samples, cfg):.1%}/일")
-    print(f"작업 1건 비용 표본 {len(job_costs)}개, 적용 예상치 {learned(job_costs, cfg.job_cost_default, cfg):.1%}p"
-          f" (새 작업은 여유 ≥ max({cfg.min_headroom:.0%}, 예상치)일 때만 시작)")
+        print("한도 관측 기록 없음 — 첫 작업 전에 probe로 읽는다")
     print(f"PIPELINE.md 통과(실증 대기): {passed_count()} / {cfg.target_passed}")
-    d = decide(now, u, None, cfg, daytime_samples=samples, job_cost_samples=job_costs, starting_job=True)
+    d = decide(now, u, cfg, starting_job=True)
     print(f"지금({now:%m-%d %H:%M}) 판정: {d.action.value} — {d.reason}")
+
+
+def approval_url(cfg: Config) -> None:
+    host = approval.tailscale_ip()
+    if host is None:
+        print("Tailscale IP를 얻지 못했다. `tailscale status`를 확인하라.")
+        return
+    print(approval.ApprovalGate(host=host, port=cfg.approval_port, token=approval.load_token(TOKEN_FILE)).url)
+    print("휴대폰에서 이 주소를 즐겨찾기해 두세요. 러너가 승인을 기다리는 동안에만 열린다.")
 
 
 def main() -> None:
     p = argparse.ArgumentParser(prog="nightshift")
     sub = p.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("run", help="야간 루프 실행 (근무 시간이면 즉시 종료)")
-    r.add_argument("--dry-run", action="store_true", help="판정·probe까지만 하고 작업은 시작하지 않는다")
-    pl = sub.add_parser("plan", help="오늘 밤 시간표와 주간 상한 계산 (API 호출 없음)")
+    r.add_argument("--dry-run", action="store_true", help="판정·probe까지만 하고 작업·승인 요청은 하지 않는다")
+    pl = sub.add_parser("plan", help="오늘 밤 시간표와 주간 상태 (API 호출 없음)")
     pl.add_argument("--at", help="이 시각 기준으로 계산, 예: '2026-09-14 22:00'")
+    sub.add_parser("approval-url", help="승인 페이지 주소 (즐겨찾기용)")
     args = p.parse_args()
 
     cfg = Config.load(HARNESS / "nightshift.toml")
     if args.cmd == "plan":
-        at = datetime.fromisoformat(args.at).replace(tzinfo=cfg.tz) if args.at else None
-        plan(cfg, at)
+        plan(cfg, datetime.fromisoformat(args.at).replace(tzinfo=cfg.tz) if args.at else None)
+        return
+    if args.cmd == "approval-url":
+        approval_url(cfg)
         return
 
     STATE_DIR.mkdir(parents=True, exist_ok=True)
