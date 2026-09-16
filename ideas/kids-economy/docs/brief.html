@@ -1,0 +1,632 @@
+<title>돈은 안 배우는 아이들</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --ground: #F4F6F8;
+    --paper: #FFFFFF;
+    --paper-sunk: #EDF1F5;
+    --rule: #D7DEE6;
+    --rule-soft: #E6EBF0;
+    --ink: #161D26;
+    --ink-2: #3C4854;
+    --muted: #64717F;
+    --blue: #2B5FA8;
+    --blue-soft: #E3EBF6;
+    --red: #C8322C;
+    --red-soft: #F7E4E3;
+    --amber: #9A6510;
+    --grid: rgba(43, 95, 168, 0.055);
+    --shadow: 0 1px 2px rgba(22, 29, 38, .05), 0 6px 18px -12px rgba(22, 29, 38, .22);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #12171D;
+      --paper: #1A2129;
+      --paper-sunk: #151B22;
+      --rule: #2E3943;
+      --rule-soft: #242D36;
+      --ink: #E4EAF0;
+      --ink-2: #BAC5D0;
+      --muted: #8593A1;
+      --blue: #5B90DB;
+      --blue-soft: #1D2A3C;
+      --red: #D9605A;
+      --red-soft: #33211F;
+      --amber: #D3A05A;
+      --grid: rgba(120, 160, 215, 0.05);
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 6px 18px -12px rgba(0, 0, 0, .7);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #12171D;
+    --paper: #1A2129;
+    --paper-sunk: #151B22;
+    --rule: #2E3943;
+    --rule-soft: #242D36;
+    --ink: #E4EAF0;
+    --ink-2: #BAC5D0;
+    --muted: #8593A1;
+    --blue: #5B90DB;
+    --blue-soft: #1D2A3C;
+    --red: #D9605A;
+    --red-soft: #33211F;
+    --amber: #D3A05A;
+    --grid: rgba(120, 160, 215, 0.05);
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 6px 18px -12px rgba(0, 0, 0, .7);
+  }
+
+  body {
+    background-color: var(--ground);
+    background-image:
+      repeating-linear-gradient(to right, var(--grid) 0 1px, transparent 1px 28px),
+      repeating-linear-gradient(to bottom, var(--grid) 0 1px, transparent 1px 28px);
+    color: var(--ink);
+    font-family: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    font-size: 16px;
+    line-height: 1.72;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 812px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 56px 96px;
+  }
+
+  h1, h2, h3, .display {
+    font-family: "Gowun Batang", Georgia, "Apple SD Gothic Neo", serif;
+    text-wrap: balance;
+  }
+
+  /* ---------- masthead ---------- */
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11.5px;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    align-items: center;
+  }
+  .eyebrow .tick { color: var(--blue); }
+
+  h1 {
+    font-size: clamp(38px, 8.5vw, 62px);
+    font-weight: 700;
+    line-height: 1.08;
+    letter-spacing: -.02em;
+    margin: 18px 0 0;
+  }
+  .standfirst {
+    font-size: clamp(17px, 2.6vw, 19.5px);
+    color: var(--ink-2);
+    margin: 18px 0 0;
+    max-width: 34em;
+  }
+  .thesis {
+    margin-top: 30px;
+    border-left: 3px solid var(--blue);
+    padding: 4px 0 4px 20px;
+    font-family: "Gowun Batang", Georgia, serif;
+    font-size: clamp(19px, 3.2vw, 23px);
+    line-height: 1.55;
+  }
+  .thesis em { font-style: normal; color: var(--blue); }
+
+  /* ---------- stat row ---------- */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 44px;
+  }
+  .stat { background: var(--paper); padding: 20px 22px 22px; }
+  .stat .k {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 10.5px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .stat .v {
+    font-family: "IBM Plex Mono", monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: clamp(25px, 3.1vw, 33px);
+    font-weight: 500;
+    line-height: 1.15;
+    margin-top: 10px;
+    letter-spacing: -.03em;
+    white-space: nowrap;
+  }
+  .stat .v.pair { font-size: clamp(22px, 2.6vw, 27px); }
+  .stat .v.neg { color: var(--red); }
+  .stat .v.pos { color: var(--blue); }
+  .stat .n { font-size: 13.5px; color: var(--muted); line-height: 1.5; margin-top: 8px; }
+
+  /* ---------- sections ---------- */
+  section { margin-top: 68px; }
+  .sechead { display: flex; align-items: baseline; gap: 14px; border-bottom: 1px solid var(--rule); padding-bottom: 12px; }
+  .sechead .num {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    color: var(--blue);
+    letter-spacing: .06em;
+    flex: none;
+    padding-top: 2px;
+  }
+  .sechead h2 { font-size: clamp(23px, 4vw, 29px); font-weight: 700; margin: 0; letter-spacing: -.015em; }
+  section > p { max-width: 38em; }
+  p { margin: 18px 0 0; }
+  strong { font-weight: 600; }
+  .lede { color: var(--ink-2); }
+
+  /* ---------- myth blocks ---------- */
+  .myth { border-top: 1px solid var(--rule-soft); padding-top: 22px; margin-top: 30px; }
+  .myth:first-of-type { border-top: 0; }
+  .myth .claim {
+    font-family: "Gowun Batang", Georgia, serif;
+    font-size: 19px;
+    color: var(--muted);
+    text-decoration: line-through;
+    text-decoration-color: var(--red);
+    text-decoration-thickness: 1.5px;
+  }
+  .myth .truth { font-size: 17.5px; font-weight: 500; margin-top: 8px; }
+  .myth .src {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-top: 12px;
+    line-height: 1.6;
+  }
+  blockquote {
+    margin: 16px 0 0;
+    padding: 14px 18px;
+    background: var(--paper-sunk);
+    border-left: 2px solid var(--red);
+    font-family: "Gowun Batang", Georgia, serif;
+    font-size: 16.5px;
+    line-height: 1.6;
+    color: var(--ink-2);
+    border-radius: 0 3px 3px 0;
+  }
+
+  /* ---------- chart ---------- */
+  figure { margin: 34px 0 0; background: var(--paper); border: 1px solid var(--rule); border-radius: 3px; padding: 24px 22px 18px; box-shadow: var(--shadow); }
+  figcaption { font-size: 13px; color: var(--muted); margin-top: 14px; line-height: 1.6; border-top: 1px solid var(--rule-soft); padding-top: 12px; }
+  .chart-title { font-family: "IBM Plex Sans KR", sans-serif; font-size: 15px; font-weight: 600; margin: 0 0 4px; }
+  .chart-sub { font-size: 13px; color: var(--muted); margin: 0 0 16px; }
+  svg { display: block; width: 100%; height: auto; max-width: 100%; }
+  .ax { font-family: "IBM Plex Mono", monospace; font-size: 11px; fill: var(--muted); }
+  .barlab { font-family: "IBM Plex Sans KR", sans-serif; font-size: 13.5px; font-weight: 500; fill: var(--ink); }
+  .barval { font-family: "IBM Plex Mono", monospace; font-size: 14px; font-weight: 500; fill: var(--ink); }
+  .bar.knowledge { fill: var(--blue); }
+  .bar.behavior { fill: var(--red); }
+  .gridline { stroke: var(--rule-soft); stroke-width: 1; }
+  .baseline { stroke: var(--rule); stroke-width: 1; }
+  .hit { fill: transparent; cursor: default; }
+  .bargroup:hover .bar { filter: brightness(1.08); }
+  #tip {
+    position: fixed;
+    z-index: 20;
+    max-width: 260px;
+    background: var(--ink);
+    color: var(--ground);
+    font-size: 12.5px;
+    line-height: 1.5;
+    padding: 9px 12px;
+    border-radius: 4px;
+    pointer-events: none;
+    box-shadow: 0 8px 24px -8px rgba(0,0,0,.45);
+  }
+  #tip b { font-family: "IBM Plex Mono", monospace; font-weight: 500; }
+
+  /* ---------- gap table ---------- */
+  .scroller { overflow-x: auto; margin-top: 26px; border: 1px solid var(--rule); border-radius: 3px; background: var(--paper); }
+  table { border-collapse: collapse; width: 100%; min-width: 520px; font-size: 14.5px; }
+  th, td { text-align: left; padding: 13px 18px; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+  thead th {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+    background: var(--paper-sunk);
+    border-bottom: 1px solid var(--rule);
+  }
+  tbody tr:last-child td { border-bottom: 0; }
+  th.has, td.has { width: 44%; }
+  td.has { color: var(--muted); }
+  td.hasnt { color: var(--ink); font-weight: 500; }
+  code {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12.5px;
+    background: var(--blue-soft);
+    color: var(--blue);
+    padding: 1px 5px;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+  .ref { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--muted); }
+
+  /* ---------- recommendation cards ---------- */
+  .band { margin-top: 32px; }
+  .bandhead {
+    display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+    font-family: "IBM Plex Mono", monospace; font-size: 12px; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--blue);
+  }
+  .bandhead .agerange { color: var(--muted); letter-spacing: .04em; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 14px; margin-top: 14px; }
+  .card { background: var(--paper); border: 1px solid var(--rule); border-radius: 3px; padding: 18px 18px 20px; display: flex; flex-direction: column; gap: 10px; }
+  .card h3 { font-size: 18px; font-weight: 700; margin: 0; line-height: 1.35; }
+  .card .why { font-size: 14px; color: var(--ink-2); margin: 0; line-height: 1.6; }
+  .card .check { font-size: 13px; color: var(--muted); margin: auto 0 0; padding-top: 10px; border-top: 1px dashed var(--rule); line-height: 1.55; }
+  .card .check b { font-family: "IBM Plex Mono", monospace; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--blue); display: block; margin-bottom: 3px; font-weight: 500; }
+  .card .items { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: var(--muted); }
+
+  /* ---------- don't list ---------- */
+  .donts { margin-top: 26px; display: flex; flex-direction: column; gap: 2px; }
+  .dont { background: var(--red-soft); border-left: 3px solid var(--red); padding: 15px 18px; border-radius: 0 3px 3px 0; }
+  .dont .t { font-weight: 600; font-size: 16px; }
+  .dont .d { font-size: 14px; color: var(--ink-2); margin-top: 5px; line-height: 1.6; }
+
+  /* ---------- supply / verdict ---------- */
+  .supply { margin-top: 26px; display: flex; flex-direction: column; gap: 10px; }
+  .layer { display: grid; grid-template-columns: 96px 1fr; gap: 16px; align-items: start; background: var(--paper); border: 1px solid var(--rule); border-radius: 3px; padding: 15px 18px; }
+  .layer .who { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding-top: 3px; }
+  .layer .what { font-size: 14.5px; line-height: 1.65; }
+  .layer .price { color: var(--red); font-weight: 600; }
+  @media (max-width: 460px) { .layer { grid-template-columns: 1fr; gap: 6px; } }
+
+  .verdict { margin-top: 30px; background: var(--paper); border: 1px solid var(--rule); border-top: 3px solid var(--amber); border-radius: 3px; padding: 24px 22px; box-shadow: var(--shadow); }
+  .verdict .badge { display: inline-flex; align-items: center; gap: 8px; font-family: "IBM Plex Mono", monospace; font-size: 12px; letter-spacing: .09em; text-transform: uppercase; color: var(--amber); font-weight: 500; }
+  .verdict .badge .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--amber); flex: none; }
+  .verdict h3 { font-size: 21px; margin: 12px 0 0; font-weight: 700; }
+  .verdict ul { margin: 16px 0 0; padding-left: 20px; }
+  .verdict li { margin-top: 9px; font-size: 15px; line-height: 1.65; }
+  .verdict li::marker { color: var(--blue); }
+
+  .open { margin-top: 24px; display: flex; flex-direction: column; gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 3px; overflow: hidden; }
+  .q { background: var(--paper); padding: 14px 18px; display: grid; grid-template-columns: 38px 1fr; gap: 14px; }
+  .q .id { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--blue); padding-top: 2px; }
+  .q .body { font-size: 14.5px; line-height: 1.6; }
+  .q .body span { display: block; color: var(--muted); font-size: 13px; margin-top: 3px; }
+
+  /* ---------- sources ---------- */
+  .sources { margin-top: 66px; border-top: 1px solid var(--rule); padding-top: 22px; }
+  .sources h2 { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; letter-spacing: .13em; text-transform: uppercase; color: var(--muted); font-weight: 500; margin: 0; }
+  .sources ol { margin: 16px 0 0; padding-left: 20px; font-size: 13.5px; color: var(--muted); line-height: 1.75; }
+  .sources li { margin-top: 7px; }
+  .sources a { color: var(--blue); text-decoration-color: var(--rule); text-underline-offset: 2px; }
+  .sources a:hover { text-decoration-color: var(--blue); }
+  .conf { font-family: "IBM Plex Mono", monospace; font-size: 10.5px; letter-spacing: .06em; padding: 1px 5px; border-radius: 2px; background: var(--paper-sunk); color: var(--muted); border: 1px solid var(--rule-soft); }
+
+  a:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 2px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">
+      <span class="tick">KIDS-ECONOMY / S0</span>
+      <span>근거 조사 브리프</span>
+      <span>2026-09-16</span>
+      <span>웹 검색 14회 · 원문 3건</span>
+    </div>
+    <h1>돈은 안 배우는 아이들</h1>
+    <p class="standfirst">초등학생에게 어떤 경제 교육이 실제로 도움이 되는가. 메타분석 2건, EU/OECD 역량 프레임워크 원문, 2022 개정 교육과정 성취기준, 국내외 공급 지형을 대조했다.</p>
+    <p class="thesis">한국 초등학교는 <em>경제를 가르치지만 돈을 가르치지 않는다.</em> 그리고 금융 교육은 지식을 올리지, 행동을 바꾸지 않는다.</p>
+  </header>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="k">효과 크기 격차</div>
+      <div class="v pair"><span class="pos">+0.25</span> / <span class="neg">+0.05</span></div>
+      <div class="n">금융 지식 대 금융 행동 (SD). 메타분석 2건이 일치</div>
+    </div>
+    <div class="stat">
+      <div class="k">이미 깔린 인프라</div>
+      <div class="v">83.8<span style="font-size:20px">%</span></div>
+      <div class="n">자녀에게 용돈을 주는 초등 학부모. 첫 지급 평균 만 8.4세</div>
+    </div>
+    <div class="stat">
+      <div class="k">부모가 꼽은 고민 1위</div>
+      <div class="v neg">41.2<span style="font-size:20px">%</span></div>
+      <div class="n">계획 없는 충동구매. 2위와 큰 격차</div>
+    </div>
+  </div>
+
+  <section>
+    <div class="sechead"><span class="num">E1—E3</span><h2>뒤집힌 통념 셋</h2></div>
+    <p class="lede">조사에 들어가기 전 사실로 믿었던 것 중 셋이 근거와 반대 방향이었다. 셋 다 이 분야에서 가장 널리 인용되는 문장들이다.</p>
+
+    <div class="myth">
+      <div class="claim">"돈 습관은 7세에 굳는다"</div>
+      <div class="truth">원 연구는 정반대를 말한다. 7세는 <strong>학습이 시작되는</strong> 나이지 습관이 고착되는 나이가 아니다.</div>
+      <blockquote>어린 아이에게 명시적 형태의 '금융' 지식을 가르치는 것은 그들의 행동을 형성하거나 바꾸는 데 효과가 없을 가능성이 높다.<br><span style="font-size:13px;color:var(--muted);font-family:'IBM Plex Sans KR',sans-serif">— Whitebread &amp; Bingham (2013), 7세 고착설의 바로 그 원 연구</span></blockquote>
+      <div class="src">저자들이 효과를 인정한 것: 일상 경험 · 부모의 모델링 · '사고의 습관'(미래 계획, 성찰, 감정 조절) <span class="conf">신뢰도 MEDIUM</span></div>
+    </div>
+
+    <div class="myth">
+      <div class="claim">"금융 교육을 하면 아이의 돈 씀씀이가 달라진다"</div>
+      <div class="truth">지식은 확실히 오르고, <strong>행동은 거의 안 움직인다.</strong> 5배 차이다.</div>
+      <div class="src">Kaiser &amp; Menkhoff (2020) 37개 준실험 · Kaiser·Lusardi·Menkhoff·Urban (2022) 76개 RCT, n&gt;160,000 <span class="conf">신뢰도 HIGH</span></div>
+    </div>
+
+    <div class="myth">
+      <div class="claim">"재미있게 만들면 더 잘 배운다"</div>
+      <div class="truth">게임·체험형과 강의식의 <strong>지식 습득 격차는 유의하지 않았다.</strong> 게임의 우위는 동기·참여·정서에만 있다.</div>
+      <div class="src">게이미피케이션 예산은 '리텐션' 항목이지 '학습 효과' 항목이 아니다 <span class="conf">신뢰도 MEDIUM-HIGH</span></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sechead"><span class="num">E2</span><h2>5배의 격차</h2></div>
+    <p class="lede">이 한 장이 이 브리프의 논지다. 퀴즈 점수를 목표로 잡으면 거의 반드시 성공하고, 거의 아무것도 바꾸지 못한다.</p>
+
+    <figure>
+      <p class="chart-title">학교 금융 교육의 효과 크기</p>
+      <p class="chart-sub">표준화 효과 크기(SD), 대조군 대비 · 초·중·고 대상 (준)실험 메타분석</p>
+      <svg viewBox="0 0 600 202" role="img" aria-label="금융 지식은 0.25 SD, 금융 행동은 0.05 SD 상승">
+        <line class="baseline" x1="144" y1="14" x2="144" y2="150"></line>
+        <line class="gridline" x1="282" y1="14" x2="282" y2="150"></line>
+        <line class="gridline" x1="420" y1="14" x2="420" y2="150"></line>
+        <line class="gridline" x1="558" y1="14" x2="558" y2="150"></line>
+        <line class="baseline" x1="144" y1="150" x2="558" y2="150"></line>
+
+        <g class="bargroup" data-tip="지식 측정 문항 점수. 타 교육 영역의 개입과 비슷한 수준이다. 개입 강도가 높고 학급이 작을수록 커지나 한계수익은 체감한다.">
+          <rect class="hit" x="0" y="18" width="600" height="56"></rect>
+          <text class="barlab" x="136" y="51" text-anchor="end">금융 지식</text>
+          <rect class="bar knowledge" x="144" y="28" width="345" height="34" rx="4"></rect>
+          <text class="barval" x="501" y="51">+0.25 SD</text>
+        </g>
+
+        <g class="bargroup" data-tip="저축·예산·연체 회피 등 실제 행동 변수. 통계적으로 유의하지만 지식 효과의 5분의 1이다.">
+          <rect class="hit" x="0" y="82" width="600" height="56"></rect>
+          <text class="barlab" x="136" y="115" text-anchor="end">금융 행동</text>
+          <rect class="bar behavior" x="144" y="92" width="69" height="34" rx="4"></rect>
+          <text class="barval" x="225" y="115">+0.05 SD</text>
+        </g>
+
+        <text class="ax" x="144" y="170" text-anchor="middle">0</text>
+        <text class="ax" x="282" y="170" text-anchor="middle">0.10</text>
+        <text class="ax" x="420" y="170" text-anchor="middle">0.20</text>
+        <text class="ax" x="558" y="170" text-anchor="middle">0.30</text>
+        <text class="ax" x="144" y="189">표준편차 단위(SD)</text>
+      </svg>
+      <figcaption>Kaiser &amp; Menkhoff (2020), <i>Economics of Education Review</i> — 37개 (준)실험. 18개 RCT로 좁혀도, 메타분석 방법을 바꿔도 결과가 유지된다. Kaiser·Lusardi·Menkhoff·Urban (2022), <i>JFE</i> — 76개 RCT, n&gt;160,000에서도 같은 방향이 확인됐다.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <div class="sechead"><span class="num">E5</span><h2>교과서에 없는 것</h2></div>
+    <p class="lede">2022 개정 사회과 성취기준을, EU/OECD가 <strong>같은 나이(만 6~10세)</strong>에 요구하는 금융 역량과 나란히 놓았다. 왼쪽은 전부 시민·거시 경제다. 오른쪽에 개인 재무가 통째로 남는다.</p>
+
+    <div class="scroller">
+      <table>
+        <thead>
+          <tr>
+            <th class="has">한국 초등생이 교과에서 만나는 것</th>
+            <th>EU/OECD가 6~10세에 요구하는데, 한국엔 없는 것</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="has">자원의 희소성과 선택의 문제 <code>4사07-01</code></td>
+            <td class="hasnt">필요와 욕구 구분 <span class="ref">(47)</span> · 충동적 지출 참기 <span class="ref">(48)</span></td>
+          </tr>
+          <tr>
+            <td class="has">생산과 소비, 지역 간 교류 <code>4사07-02</code></td>
+            <td class="hasnt">예산 개념과 분수에 맞게 살기 <span class="ref">(72)</span> · 돈이 부족할 때 우선순위 <span class="ref">(77)</span></td>
+          </tr>
+          <tr>
+            <td class="has">가계·기업의 역할, 근로자 권리 <code>6사11-01</code></td>
+            <td class="hasnt">저축 목표와 습관 <span class="ref">(88·89)</span> · 은행 이자 <span class="ref">(93)</span></td>
+          </tr>
+          <tr>
+            <td class="has">경제성장이 생활에 미치는 영향 <code>6사11-02</code></td>
+            <td class="hasnt">가격과 가치의 차이 <span class="ref">(36)</span> · 가격 비교와 바가지 <span class="ref">(37)</span></td>
+          </tr>
+          <tr>
+            <td class="has">무역의 의미와 발생 이유 <code>6사11-03</code></td>
+            <td class="hasnt">개인정보와 신원 도용 <span class="ref">(188·189)</span> · 보험 개념 <span class="ref">(154)</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p>괄호 안 번호는 EU/OECD-INFE <i>Financial competence framework for children and youth</i> (2023)의 역량 항목 번호다. 같은 프레임워크가 6~10세에 배정한 투자 항목은 단 하나 — <span class="ref">(104)</span> "투자는 저축과 다르다"뿐이다. <strong>초등생 주식 교육에는 근거가 없다.</strong></p>
+    <p>그런데 가정에는 인프라가 이미 있다. 학부모 <strong>83.8%가 용돈을 주고</strong>, 그중 82.1%가 정기 지급이다. 없는 것은 돈이 아니라 <strong>그 돈을 두고 할 대화</strong>다.</p>
+  </section>
+
+  <section>
+    <div class="sechead"><span class="num">권고</span><h2>그래서 무엇을 가르치나</h2></div>
+    <p class="lede">근거가 지지하는 답은 "무엇을 가르치나"가 아니라 <strong>"무엇을 반복시키나"</strong>다. 목표를 지식 점수가 아니라 행동으로 고정한다 — 쓰기 전에 <strong>멈추고</strong>, 대안과 <strong>비교하고</strong>, 목표를 위해 <strong>미루는</strong> 것.</p>
+
+    <div class="band">
+      <div class="bandhead"><span>저학년</span><span class="agerange">만 6–9세 · 아직 돈이 손에 잡히는 나이</span></div>
+      <div class="cards">
+        <div class="card">
+          <h3>필요와 욕구</h3>
+          <p class="why">모든 지출 판단의 기초 분류. 이것 없이는 예산이 성립하지 않는다.</p>
+          <p class="check"><b>확인 방법</b>장 보기 전 아이가 목록을 두 칸으로 나눠 적는가</p>
+        </div>
+        <div class="card">
+          <h3>쓰면 없어진다</h3>
+          <p class="why">기회비용. 전자 결제 시대에 가장 빠르게 사라지는 감각이다.</p>
+          <p class="check"><b>확인 방법</b>한정된 용돈으로 둘 중 하나를 고른 경험이 월 1회 이상 있는가</p>
+        </div>
+        <div class="card">
+          <h3>기다리면 더 큰 것</h3>
+          <p class="why">지연 만족. 자기조절은 7세 전후에 기반이 형성되는 역량이다.</p>
+          <p class="check"><b>확인 방법</b>2주 이상 걸리는 저축 목표를 끝까지 달성한 적이 있는가</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="band">
+      <div class="bandhead"><span>고학년</span><span class="agerange">만 10–12세 · 교과에도 중학교에도 없는 구간</span></div>
+      <div class="cards">
+        <div class="card">
+          <h3>예산 맞추기</h3>
+          <p class="why">수입과 지출을 미리 배분한다. 초등 교과에 아예 없고 중학교에서도 나오지 않는다.</p>
+          <p class="check"><b>확인 방법</b>한 달 용돈을 항목별로 미리 나누고, 초과했는지 스스로 아는가</p>
+        </div>
+        <div class="card">
+          <h3>저축 목표와 계획</h3>
+          <p class="why">학부모가 가장 많이 시도하지만(65.8%) 대개 목표 없이 하는 항목이다.</p>
+          <p class="check"><b>확인 방법</b>목표 금액·기간·주당 저축액을 말할 수 있는가</p>
+        </div>
+        <div class="card">
+          <h3>가격과 가치</h3>
+          <p class="why">부모 고민 1위인 충동구매에 직접 대응하는 유일한 항목이다.</p>
+          <p class="check"><b>확인 방법</b>사기 전에 다른 가격을 비교해본 적이 있는가</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="band">
+      <div class="bandhead"><span>디지털 추가</span><span class="agerange">만 7세부터 카드로 결제하는 세대에게만 필요한 항목</span></div>
+      <div class="cards">
+        <div class="card">
+          <h3>안 보이는 돈</h3>
+          <p class="why">현금을 세어본 적 없는 아이에게 "돈이 줄어든다"는 감각을 잔액으로 만들어줘야 한다.</p>
+          <p class="items">토스 유스카드 발급 연령 = 만 7세</p>
+        </div>
+        <div class="card">
+          <h3>개인정보와 사기</h3>
+          <p class="why">EU/OECD가 6~10세 필수로 지정한 항목. 국내 초등 교과에는 없다.</p>
+          <p class="items">역량 항목 188 · 189 · 195</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sechead"><span class="num">E4</span><h2>하지 말아야 할 것</h2></div>
+    <div class="donts">
+      <div class="dont">
+        <div class="t">집안일에 용돈을 붙이지 않는다</div>
+        <div class="d">집안일 연동(chore-contingent) 집단은 <strong>지출률이 높고 저축률이 낮았다.</strong> 돈이 '관리할 자원'이 아니라 '노동의 대가'가 되기 때문이다. 집안일은 가족 구성원의 책임으로, 용돈은 별도 교육 도구로 분리한다. <span class="conf">신뢰도 LOW-MEDIUM · 원 논문 확인 필요</span></div>
+      </div>
+      <div class="dont">
+        <div class="t">금융 용어 퀴즈를 성과로 착각하지 않는다</div>
+        <div class="d">지식은 +0.25 SD로 쉽게 오르고 행동은 +0.05 SD밖에 안 움직인다. 측정하기 쉬운 것을 목표로 삼으면 <strong>성공하면서 실패한다.</strong></div>
+      </div>
+      <div class="dont">
+        <div class="t">초등생 주식 계좌를 경제 교육이라 부르지 않는다</div>
+        <div class="d">EU/OECD도 6~10세엔 "투자는 저축과 다르다" 한 줄뿐이다. 국내 학부모의 6.2%만 하고 있는 것도 우연이 아니다.</div>
+      </div>
+    </div>
+    <p>효과가 확인된 조건은 하나뿐이었다 — <strong>부모가 돈에 관한 트레이드오프를 말로 설명한 경우.</strong> 단순히 돈을 받은 아이와 차이가 컸다. 용돈은 어른이 대화를 끌고 갈 때만 교육 수단이 된다.</p>
+  </section>
+
+  <section>
+    <div class="sechead"><span class="num">E6</span><h2>사업으로 보면: 무료로 꽉 찬 자리</h2></div>
+    <p class="lede">이 영역은 비어 있지 않다. 위에서는 국가가 무료로, 아래에서는 핀테크가 무료로 채우고 있다.</p>
+
+    <div class="supply">
+      <div class="layer">
+        <div class="who">공교육</div>
+        <div class="what">한국은행 청소년 경제강좌 — 초4~고3, <span class="price">무료 + 직원이 학교로 직접 출강</span>. 금융감독원 금융교육 표준안이 초·중·고 학습목표를 이미 표준화했다.</div>
+      </div>
+      <div class="layer">
+        <div class="who">콘텐츠</div>
+        <div class="what">KDI 경제교육·정보센터, 기획재정부 경제배움e+, 금융위원회 어린이 사이트 — 교육과정별 전 자료 <span class="price">무료 배포</span>.</div>
+      </div>
+      <div class="layer">
+        <div class="who">금융</div>
+        <div class="what">토스 유스카드가 <strong>만 7세부터</strong> 사실상 표준. 퍼핀(레몬트리)·하나 아이부자가 용돈·목표저축·경제퀴즈를 <span class="price">무료</span>로 덮는다.</div>
+      </div>
+      <div class="layer">
+        <div class="who">해외 선례</div>
+        <div class="what">GoHenry — 월 $5/아동, 평균 유지 6년, LTV/CAC 3:1이라는 <strong>멀쩡한 지표에도 불구하고</strong> 2025년 말 미국 브랜드가 Acorns Early에 흡수됐다. 단위경제가 나빠서가 아니라, <strong>단독으로 서지 못하고 더 큰 금융 플랫폼의 획득 채널로만 가치가 남았기 때문이다.</strong></div>
+      </div>
+    </div>
+
+    <p>여기에 규제가 하나 더 얹힌다. 개인정보 보호법 제22조의2에 따라 만 14세 미만은 <strong>법정대리인 동의와 그 확인이 의무</strong>다(위반 시 5년 이하 징역 또는 5천만원 이하 벌금, 매출 3% 이하 과징금). 즉사 요인은 아니지만 "아이 혼자 가입해 쓰는 앱"은 법적으로 불가능하고, <strong>부모가 반드시 첫 사용자</strong>가 된다. 제약이면서 동시에 근거가 가리키는 방향과 같다.</p>
+
+    <div class="verdict">
+      <div class="badge"><span class="dot"></span>G0 판정 — 통과(조건부)</div>
+      <h3>콘텐츠 축과 카드 축을 포기하는 조건으로만 다음 단계로 간다</h3>
+      <ul>
+        <li><strong>죽은 축:</strong> 교재·커리큘럼·퀴즈(국가가 무료 공급), 아동 카드·지갑(토스 유스가 만 7세부터 선점).</li>
+        <li><strong>살아남은 축:</strong> 부모–자녀의 <strong>지출 결정 시점 개입</strong>과 <strong>회고 루틴</strong>. 부모가 스스로 지목한 통증 1위와 정확히 겹치고, 공공도 핀테크도 여기는 건드리지 않는다.</li>
+        <li><strong>S1의 첫 질문은 "무엇을 가르칠까"가 아니다.</strong> "부모가 이것에 돈을 내는가, 아니면 이것도 무료여야 하는가"다.</li>
+        <li><strong>종료 조건:</strong> S1에서 지불 주체가 특정되지 않으면 여기서 끝낸다. 교육적 가치가 있다는 것과 사업이 된다는 것은 다른 주장이다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <div class="sechead"><span class="num">다음</span><h2>아직 안 닫힌 질문</h2></div>
+    <div class="open">
+      <div class="q"><div class="id">Q1</div><div class="body">집안일–용돈 연동의 저축률 저하는 원 논문이 있는가<span>「하지 말 것」의 첫 항목 전체가 여기에 기대는데 지금 신뢰도가 LOW-MEDIUM이다 · paper-lookup</span></div></div>
+      <div class="q"><div class="id">Q2</div><div class="body">한국 초등생 금융이해력의 <em>최근</em> 데이터<span>인용 가능한 금감원 조사가 2005년 것뿐이다</span></div></div>
+      <div class="q"><div class="id">Q3</div><div class="body">부모의 지불 의사가 붙는 대상은 콘텐츠인가, 카드인가, 통제인가<span>G0 조건부 판정을 푸는 유일한 질문 · deepdive medium</span></div></div>
+      <div class="q"><div class="id">Q4</div><div class="body">퍼핀·아이부자의 실제 리텐션과 이탈 사유<span>"게이미피케이션은 학습이 아니라 지속을 산다"가 국내에서 실증되는가 · startup-competitors</span></div></div>
+    </div>
+  </section>
+
+  <div class="sources">
+    <h2>출처</h2>
+    <ol>
+      <li><a href="https://www.sciencedirect.com/science/article/abs/pii/S0272775718306940">Kaiser &amp; Menkhoff (2020), Financial education in schools: A meta-analysis of experimental studies</a>, <i>Economics of Education Review</i></li>
+      <li><a href="https://www.nber.org/papers/w27057">Kaiser, Lusardi, Menkhoff &amp; Urban (2022), Financial Education Affects Financial Knowledge and Downstream Behaviors</a>, NBER WP 27057</li>
+      <li><a href="https://kidwealth.com/money-habits-set-age-7/">Whitebread &amp; Bingham (2013) 해설 및 "7세 고착설" 오해 정정</a></li>
+      <li><a href="https://www.oecd.org/content/dam/oecd/en/publications/reports/2023/09/financial-competence-framework-for-children-and-youth-in-the-european-union_b5562e18/bf059471-en.pdf">EU/OECD-INFE (2023), Financial competence framework for children and youth in the European Union</a> — 역량 항목 번호의 출처, 원문 PDF 직접 추출</li>
+      <li><a href="https://journals.sagepub.com/doi/10.1177/14788047221135343">Platz &amp; Jüttler (2022), Game-based learning as a gateway for promoting financial literacy</a></li>
+      <li><a href="https://www.sciencedirect.com/science/article/pii/S0147596724000441">The impact of an online game-based financial education course: Multi-country experimental evidence</a></li>
+      <li><a href="https://www.researchgate.net/publication/342382629_Experiential_financial_education_A_field_study_of_my_classroom_economy_in_elementary_schools">Experiential financial education: A field study of My Classroom Economy in elementary schools</a></li>
+      <li><a href="https://hiwavemakers.com/blog/allowance-kids-money-habits-research/">Does Giving Kids an Allowance Actually Build Money Habits?</a> · <a href="http://lewismandell.com/child_allowances_-_beneficial_or_harmful">Mandell, Child Allowances: Beneficial or Harmful</a></li>
+      <li><a href="https://v.daum.net/v/qdTzaWNdXk">초등 학부모 69% "자녀 경제 교육 한다"… 첫 용돈 나이 평균 만 8.4세</a> (윤선생 설문, 초등 학부모 586명, 2025)</li>
+      <li><a href="https://namu.wiki/w/2022%20%EA%B0%9C%EC%A0%95%20%EA%B5%90%EC%9C%A1%EA%B3%BC%EC%A0%95/%EC%82%AC%ED%9A%8C%EA%B3%BC">2022 개정 교육과정 사회과 성취기준</a> (교육부 고시 제2022-33호 정리본)</li>
+      <li><a href="https://www.bok.or.kr/portal/main/contents.do?menuNo=200490">한국은행 청소년 경제강좌</a> · <a href="https://eiec.kdi.re.kr/">KDI 경제교육·정보센터</a> · <a href="https://www.fsc.go.kr/no010101/84429">금융위원회 학교 금융교육 보도자료</a></li>
+      <li><a href="https://toss.im/teens/uss-card">토스 유스카드</a> · <a href="https://www.firfin.family/">퍼핀(레몬트리)</a> · <a href="https://research.contrary.com/company/greenlight">Greenlight Business Breakdown (Contrary Research)</a></li>
+    </ol>
+  </div>
+
+</div>
+
+<script>
+  (function () {
+    var tip = null;
+    function show(e, text) {
+      if (!tip) {
+        tip = document.createElement('div');
+        tip.id = 'tip';
+        document.body.appendChild(tip);
+      }
+      tip.textContent = text;
+      tip.hidden = false;
+      move(e);
+    }
+    function move(e) {
+      if (!tip) return;
+      var x = e.clientX + 14, y = e.clientY + 16;
+      var r = tip.getBoundingClientRect();
+      if (x + r.width > window.innerWidth - 8) x = e.clientX - r.width - 14;
+      if (y + r.height > window.innerHeight - 8) y = e.clientY - r.height - 16;
+      tip.style.left = Math.max(8, x) + 'px';
+      tip.style.top = Math.max(8, y) + 'px';
+    }
+    function hide() { if (tip) tip.hidden = true; }
+
+    document.querySelectorAll('.bargroup').forEach(function (g) {
+      var text = g.getAttribute('data-tip');
+      g.addEventListener('mouseenter', function (e) { show(e, text); });
+      g.addEventListener('mousemove', move);
+      g.addEventListener('mouseleave', hide);
+    });
+    window.addEventListener('scroll', hide, { passive: true });
+  })();
+</script>
