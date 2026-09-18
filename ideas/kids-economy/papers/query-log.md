@@ -32,3 +32,23 @@ API 키: 없음 (OpenAlex·Europe PMC 모두 무키 rate limit으로 진행). `O
 - Mischel(1970, 1972)의 초록 — 두 논문 모두 초록이 색인돼 있지 않다(1970년대 APA 논문). 주의 기제에 관한 내용은 **2차 인용으로만** 다뤘고 본문 대조는 못 했다.
 - 6~9세 **구매 맥락**의 지연 연구 — 실험실 과제(마시멜로·지연 할인)는 풍부하나, 실제 매장·용돈 상황의 무작위 실험은 이 경로로 찾지 못했다.
 - 아동 대상 **분 단위 지연**의 용량-반응(얼마나 짧아도 효과가 있는지) — 직접 다룬 연구를 특정하지 못했다.
+
+---
+
+# 2차 검색 — 시각화·심상·기회비용 (2026-09-18)
+
+목적: "사진으로 목표가 멀어지는 것을 보여주면 아이가 이해하는가"의 실험 근거
+
+| # | DB | 파라미터 | 결과 |
+|---|---|---|---|
+| 13 | OpenAlex | `filter=title_and_abstract.search:"delay of gratification" AND (reward AND (visibility OR exposed OR attention OR distraction))` | 71건 — Mischel 3부작 상위 |
+| 14 | OpenAlex | `..."goal gradient" OR "goal progress") AND (motivation OR visualization OR saving)` | 336건 |
+| 15 | OpenAlex | `..."loss aversion" AND (children OR development OR age)` | 1,090건 — **노이즈 과다, 폐기** |
+| 16 | OpenAlex | `..."episodic future thinking" AND (cue OR imagery OR picture OR vivid)` | **243건 — 최고 수확** |
+| 17 | OpenAlex | `..."opportunity cost" AND (children OR student) AND (teaching OR learning OR intervention)` | 395건 — **주제 불일치, 폐기** |
+| 18 | OpenAlex | `..."savings goal" AND (visualization OR reminder OR "mental accounting") AND (experiment OR field)` | 5건 |
+| 19 | OpenAlex | `...("intertemporal choice" OR "delay discounting") AND (picture OR image OR visual OR photograph) AND cue` | **응답 파싱 실패 — 재시도 안 함** |
+| 20 | OpenAlex | `...(children OR child) AND ("intertemporal choice" OR "delayed reward") AND (symbolic OR representation OR visual)` | 5건 |
+| 21 | Europe PMC | DOI 5건 개별 조회, `resultType=core` | 4건 초록 확보, **1건 없음**(Symbolic Distancing 2019) |
+
+**추가로 겪은 실패:** 질의 15·17은 검색어가 넓어 주제와 무관한 고인용 논문이 상위를 채웠다(비만 경제학, 교사 임금). `title_and_abstract.search`로 좁혀도 **일반 명사 조합('loss aversion' + children)은 여전히 노이즈가 크다.** 구체적 용어(`episodic future thinking`)가 훨씬 나은 수확을 냈다.
