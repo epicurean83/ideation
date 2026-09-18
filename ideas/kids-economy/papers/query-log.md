@@ -68,3 +68,17 @@ API 키: 없음 (OpenAlex·Europe PMC 모두 무키 rate limit으로 진행). `O
 | 26 | Europe PMC | DOI 3건 `resultType=core` | 2건 초록 확보, 1건 없음(Boyer & Levine 2007) |
 
 **미확인으로 남긴 것:** 아동의 그래프 이해(질의 23 실패), 8세의 "주(week)" 길이 실감(질의 24 실패). 둘 다 POC 관찰로 대체한다.
+
+---
+
+# 4차 검색 — 근거 재점검 (2026-09-18)
+
+| # | DB | 파라미터 | 결과 |
+|---|---|---|---|
+| 27 | OpenAlex | `filter=title_and_abstract.search:"financial socialization" AND (parent OR family) AND (children OR adolescent)` | **104건 — 결정적 수확** |
+| 28 | OpenAlex | `...("attention deployment" OR "attentional strategy" OR distraction) AND ("self-control" OR "delay") AND children` | 581건 — **노이즈 과다**(SCIWORA 등 무관 논문 상위). Mischel 1972 외 수확 없음 |
+| 29 | OpenAlex | `...(parent OR mother) AND child AND (conversation OR talk) AND (money OR number OR numeracy) AND everyday` | 313건 — **전부 무관. 폐기** |
+| 30 | Europe PMC | DOI 3건 | **3건 모두 없음** — 소비자학·가족학은 PMC 색인 대상이 아니다 |
+| 31 | OpenAlex | `GET /works/doi:{doi}` × 3 + `openalex_abstract.py` | **3건 모두 초록 복원 성공** |
+
+**배운 것:** Europe PMC가 비면 OpenAlex `abstract_inverted_index`로 우회할 수 있다. 분야가 생의학 밖이면 이 순서가 맞다.
