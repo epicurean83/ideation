@@ -52,3 +52,19 @@ API 키: 없음 (OpenAlex·Europe PMC 모두 무키 rate limit으로 진행). `O
 | 21 | Europe PMC | DOI 5건 개별 조회, `resultType=core` | 4건 초록 확보, **1건 없음**(Symbolic Distancing 2019) |
 
 **추가로 겪은 실패:** 질의 15·17은 검색어가 넓어 주제와 무관한 고인용 논문이 상위를 채웠다(비만 경제학, 교사 임금). `title_and_abstract.search`로 좁혀도 **일반 명사 조합('loss aversion' + children)은 여전히 노이즈가 크다.** 구체적 용어(`episodic future thinking`)가 훨씬 나은 수확을 냈다.
+
+---
+
+# 3차 검색 — 아동 지각·수 감각 (2026-09-18)
+
+목적: "8세가 직관적으로 이해하는 화면"의 근거 — 막대·개수·숫자 중 무엇이 읽히나
+
+| # | DB | 파라미터 | 결과 |
+|---|---|---|---|
+| 22 | OpenAlex | `filter=title_and_abstract.search:"number line" AND (estimation OR representation) AND (children OR development) AND (linear OR logarithmic)` | **135건** — Siegler 계열 상위 |
+| 23 | OpenAlex | `...(children OR student) AND ("graph comprehension" OR "bar graph" OR "graphical representation") AND (age OR development OR elementary)` | **응답 파싱 실패** — 재시도 안 함 |
+| 24 | OpenAlex | `...children AND ("time concept" OR "temporal concept" OR "conventional time") AND (week OR calendar OR development)` | **응답 파싱 실패** — 주 단위 이해는 미확인으로 남김 |
+| 25 | OpenAlex | `..."proportional reasoning" AND (children OR development) AND age` | **92건 — 결정적 수확** |
+| 26 | Europe PMC | DOI 3건 `resultType=core` | 2건 초록 확보, 1건 없음(Boyer & Levine 2007) |
+
+**미확인으로 남긴 것:** 아동의 그래프 이해(질의 23 실패), 8세의 "주(week)" 길이 실감(질의 24 실패). 둘 다 POC 관찰로 대체한다.
