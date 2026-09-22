@@ -16,7 +16,7 @@
 
 ### E20. 부모의 금융 사회화는 실제로 효과가 있다 — 1차 근거
 
-**Kim & Chatterjee? (2020), "Talking money at home: the value of family financial socialization", _Int. J. Bank Marketing_** · 인용 112 · 신뢰도 **Medium-High**
+**Zhao & Zhang (2020), "Talking money at home: the value of family financial socialization", _Int. J. Bank Marketing_** · 인용 112 · 신뢰도 **Medium-High**
 > 미국 **2016 National Financial Well-Being Survey 전국 대표 표본 n=6,311**, 구조방정식(SEM). **부모의 금융 사회화가 금융 리터러시·금융 행동·재무 웰빙 모두에 유의한 긍정적 영향**을 미쳤다. 부모의 교육 수준이 사회화의 질에 유의하게 영향.
 > DOI `10.1108/ijbm-04-2020-0174`
 

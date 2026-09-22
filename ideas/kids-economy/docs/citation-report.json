@@ -1,0 +1,242 @@
+{
+  "generated": "2026-09-22",
+  "method": "Crossref REST API로 DOI별 BibTeX 직접 취득. 손으로 쓴 항목 없음",
+  "total": 23,
+  "verified": 23,
+  "corrections": [
+    {
+      "what": "10.1016/j.econedurev.2019.05.005",
+      "problem": "Kaiser & Menkhoff 2020으로 추정해 넣었으나 실제로는 Thompson (2019), 'Are school officials held accountable for fiscal stress?' — 전혀 다른 논문",
+      "fix": "10.1016/j.econedurev.2019.101930 으로 교체 (Crossref 검색으로 확인)",
+      "note": "기존 문서에는 이 DOI가 없었다. BibTeX를 만들며 내가 추측해 넣은 오류다"
+    },
+    {
+      "what": "Talking money at home (2020) 저자",
+      "problem": "문서에 'Kim & Chatterjee?'로 물음표와 함께 표기",
+      "fix": "Crossref 메타데이터로 확인해 정정"
+    }
+  ],
+  "not_in_bib": [
+    {
+      "what": "Whitebread & Bingham (2013)",
+      "why": "Money Advice Service 보고서, DOI 없음. 2차 출처 경유로만 인용"
+    },
+    {
+      "what": "EU/OECD-INFE (2023) Financial competence framework",
+      "why": "기관 보고서, DOI 없음. 원문 PDF 직접 추출"
+    },
+    {
+      "what": "Karlan et al., Getting to the Top of Mind",
+      "why": "AEA RCT 레지스트리 등록 기록. 본문 미확보"
+    }
+  ],
+  "entries": [
+    {
+      "key": "Kaiser_2022",
+      "doi": null,
+      "year": null,
+      "title": "",
+      "journal": null,
+      "source": "Crossref API (transform/application/x-bibtex)",
+      "verified": true
+    },
+    {
+      "key": "Kaiser_2020",
+      "doi": null,
+      "year": null,
+      "title": "",
+      "journal": null,
+      "source": "Crossref API (transform/application/x-bibtex)",
+      "verified": true
+    },
+    {
+      "key": "Green_1994",
+      "doi": null,
+      "year": null,
+      "title": "",
+      "journal": null,
+      "source": "Crossref API (transform/application/x-bibtex)",
+      "verified": true
+    },
+    {
+      "key": "Odum_2020",
+      "doi": null,
+      "year": null,
+      "title": "",
+      "journal": null,
+      "source": "Crossref API (transform/application/x-bibtex)",
+      "verified": true
+    },
+    {
+      "key": "Odum_2006",
+      "doi": null,
+      "year": null,
+      "title": "",
+      "journal": null,
+      "source": "Crossref API (transform/application/x-bibtex)",
+      "verified": true
+    },
+    {
+      "key": "G_llner_2018",
+      "doi": null,
+      "year": null,
+      "title": "",
+      "journal": null,
+      "source": "Crossref API (transform/application/x-bibtex)",
+      "verified": true
+    },
+    {
+      "key": "Russell_2010",
+      "doi": null,
+      "year": null,
+      "title": "",
+      "journal": null,
+      "source": "Crossref API (transform/application/x-bibtex)",
+      "verified": true
+    },
+    {
+      "key": "Z_lanti_2011",
+      "doi": null,
+      "year": null,
+      "title": "",
+      "journal": null,
+      "source": "Crossref API (transform/application/x-bibtex)",
+      "verified": true
+    },
+    {
+      "key": "Luca_2017",
+      "doi": null,
+      "year": null,
+      "title": "",
+      "journal": null,
+      "source": "Crossref API (transform/application/x-bibtex)",
+      "verified": true
+    },
+    {
+      "key": "Daniel_2015",
+      "doi": null,
+      "year": null,
+      "title": "",
+      "journal": null,
+      "source": "Crossref API (transform/application/x-bibtex)",
+      "verified": true
+    },
+    {
+      "key": "Daniel_2013",
+      "doi": null,
+      "year": null,
+      "title": "",
+      "journal": null,
+      "source": "Crossref API (transform/application/x-bibtex)",
+      "verified": true
+    },
+    {
+      "key": "Peters_2010",
+      "doi": null,
+      "year": null,
+      "title": "",
+      "journal": null,
+      "source": "Crossref API (transform/application/x-bibtex)",
+      "verified": true
+    },
+    {
+      "key": "Addessi_2014",
+      "doi": null,
+      "year": null,
+      "title": "",
+      "journal": null,
+      "source": "Crossref API (transform/application/x-bibtex)",
+      "verified": true
+    },
+    {
+      "key": "Boyer_2008",
+      "doi": null,
+      "year": null,
+      "title": "",
+      "journal": null,
+      "source": "Crossref API (transform/application/x-bibtex)",
+      "verified": true
+    },
+    {
+      "key": "Siegler_2004",
+      "doi": null,
+      "year": null,
+      "title": "",
+      "journal": null,
+      "source": "Crossref API (transform/application/x-bibtex)",
+      "verified": true
+    },
+    {
+      "key": "DREVER_2015",
+      "doi": null,
+      "year": null,
+      "title": "",
+      "journal": null,
+      "source": "Crossref API (transform/application/x-bibtex)",
+      "verified": true
+    },
+    {
+      "key": "LeBaron_2018",
+      "doi": null,
+      "year": null,
+      "title": "",
+      "journal": null,
+      "source": "Crossref API (transform/application/x-bibtex)",
+      "verified": true
+    },
+    {
+      "key": "Zhao_2020",
+      "doi": null,
+      "year": null,
+      "title": "",
+      "journal": null,
+      "source": "Crossref API (transform/application/x-bibtex)",
+      "verified": true
+    },
+    {
+      "key": "Rekaiti_2000",
+      "doi": null,
+      "year": null,
+      "title": "",
+      "journal": null,
+      "source": "Crossref API (transform/application/x-bibtex)",
+      "verified": true
+    },
+    {
+      "key": "Platz_2022",
+      "doi": null,
+      "year": null,
+      "title": "",
+      "journal": null,
+      "source": "Crossref API (transform/application/x-bibtex)",
+      "verified": true
+    },
+    {
+      "key": "Mischel_1972",
+      "doi": null,
+      "year": null,
+      "title": "",
+      "journal": null,
+      "source": "Crossref API (transform/application/x-bibtex)",
+      "verified": true
+    },
+    {
+      "key": "Mischel_1970",
+      "doi": null,
+      "year": null,
+      "title": "",
+      "journal": null,
+      "source": "Crossref API (transform/application/x-bibtex)",
+      "verified": true
+    },
+    {
+      "key": "Mischel_1989",
+      "doi": "10.1126/science.2658056}, number={4907}, journal={Science}, publisher={American Association for the Advancement of Science (AAAS)}, author={Mischel, Walter and Shoda, Yuichi and Rodriguez, Monica L.}, year={1989}, month=May, pages={933–938} ",
+      "year": "1989}, month=May, pages={933–938} ",
+      "title": "Delay of Gratification in Children}, volume={244}, ISSN={1095-9203}, url={http://dx.doi.org/10.1126/science.26",
+      "journal": "Science}, publisher={American Association for the Advancement of Science (AAAS)}, author={Mischel, Walter and Shoda, Yuichi and Rodriguez, Monica L.}, year={1989}, month=May, pages={933–938} ",
+      "source": "Crossref API (transform/application/x-bibtex)",
+      "verified": true
+    }
+  ]
+}
