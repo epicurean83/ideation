@@ -1,0 +1,174 @@
+<title>네 돈이니까 네가 정해</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --paper: #F4EFE4;
+    --paper-2: #FAF7F0;
+    --kraft: #E3D6BE;
+    --kraft-2: #EFE6D6;
+    --rule: #D3C5AC;
+    --rule-soft: #DCCDB1;
+    --ink: #2B2620;
+    --ink-2: #4A4238;
+    --muted: #8A7B66;
+    --muted-2: #786E5E;
+    --blue: #2F5D8C;
+    --blue-deep: #1F4062;
+    --red: #C8322C;
+    --green: #6E7F5B;
+  }
+  body {
+    background-color: var(--paper);
+    background-image: radial-gradient(rgba(180,160,120,.13) 0.5px, transparent 0.5px);
+    background-size: 7px 7px;
+    color: var(--ink);
+    font-family: "IBM Plex Sans KR", "Apple SD Gothic Neo", sans-serif;
+    font-size: 16px;
+    line-height: 1.72;
+    -webkit-font-smoothing: antialiased;
+  }
+  * { box-sizing: border-box; }
+  .wrap { max-width: 620px; margin: 0 auto; padding-inline: 20px; padding-block: 44px 72px; }
+  .hand { font-family: Gaegu, cursive; }
+
+  h1 { font-family: Gaegu, cursive; font-size: clamp(34px, 8vw, 50px); font-weight: 700; line-height: 1.15; letter-spacing: -.01em; margin: 0; text-wrap: balance; }
+  .lede { font-size: clamp(17px, 3.6vw, 19px); color: var(--ink-2); margin: 20px 0 0; line-height: 1.7; }
+  .lede b { font-weight: 600; color: var(--ink); }
+
+  section { margin-top: 54px; }
+  h2 { font-family: Gaegu, cursive; font-size: clamp(26px, 5.5vw, 32px); font-weight: 700; margin: 0 0 16px; line-height: 1.25; text-wrap: balance; }
+  p { margin: 14px 0 0; }
+  .quote { font-family: Gaegu, cursive; font-size: clamp(22px, 4.6vw, 27px); line-height: 1.4; color: var(--ink); margin: 0; }
+  .small { font-size: 13.5px; color: var(--muted-2); line-height: 1.65; }
+
+  .card { background: var(--paper-2); border: 1px solid var(--rule-soft); border-radius: 4px; padding: 20px 20px 22px; }
+
+  /* 화면 미니어처 */
+  .phone { max-width: 300px; margin: 0 auto; background: var(--paper-2); border: 1.5px solid var(--rule); border-radius: 12px; padding: 16px 14px 18px; box-shadow: 0 2px 10px -6px rgba(43,38,32,.4); }
+  .photo { position: relative; height: 150px; border: 1.5px solid #C9B795; border-radius: 5px; overflow: hidden; background: var(--kraft); }
+  .photo .icon { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .photo .got { position: absolute; bottom: 0; left: 0; right: 0; height: 41%; background: rgba(47,93,140,.16); }
+  .photo .miss { position: absolute; top: 0; left: 0; right: 0; height: 47%; background: rgba(250,247,240,.93); }
+  .photo .back { position: absolute; top: 47%; left: 0; right: 0; height: 12%; background: repeating-linear-gradient(135deg, rgba(200,50,44,.42) 0 7px, rgba(233,160,154,.42) 7px 14px); border-top: 2px solid var(--red); border-bottom: 2px solid var(--red); display: flex; align-items: center; padding-left: 9px; }
+  .badge { background: var(--red); color: #FAF7F0; border-radius: 3px; padding: 2px 7px; font-size: 10px; font-weight: 600; white-space: nowrap; }
+  .weeks { display: flex; align-items: center; justify-content: center; gap: 13px; margin-top: 15px; }
+  .w-old { display: flex; align-items: baseline; gap: 2px; opacity: .38; }
+  .w-old .n { font-family: Gaegu, cursive; font-size: 34px; font-weight: 700; line-height: 1; text-decoration: line-through; text-decoration-thickness: 2.5px; }
+  .w-new { display: flex; align-items: baseline; gap: 2px; color: var(--red); }
+  .w-new .n { font-family: Gaegu, cursive; font-size: 56px; font-weight: 700; line-height: .85; }
+
+  .ev { display: flex; gap: 13px; align-items: flex-start; margin-top: 18px; }
+  .ev .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; margin-top: 11px; }
+  .ev .body { font-size: 14.5px; line-height: 1.65; color: var(--ink-2); }
+  .ev .body b { font-weight: 600; color: var(--ink); }
+  .ev .src { display: block; font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+  .cta-box { background: var(--kraft-2); border: 2px solid var(--ink); border-radius: 5px; padding: 24px 22px 26px; }
+  .cta { display: block; text-decoration: none; margin-top: 18px; height: 60px; background: var(--ink); color: #F3EADA; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600; }
+  .cta:hover { background: #3A332B; color: #F3EADA; }
+
+  .price { display: flex; flex-direction: column; gap: 9px; margin-top: 16px; }
+  .price a { text-decoration: none; min-height: 56px; border: 1.5px solid var(--rule); background: var(--paper-2); border-radius: 4px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--ink); }
+  .price a:hover { border-color: var(--ink); background: var(--kraft-2); color: var(--ink); }
+  .price .lab { font-size: 15px; font-weight: 500; }
+  .price .sub { font-size: 12px; color: var(--muted-2); }
+
+  .ph { background: #F7E9E7; border: 1px dashed var(--red); border-radius: 3px; padding: 2px 7px; font-size: 12px; color: var(--red); font-weight: 600; }
+
+  footer { margin-top: 56px; border-top: 1px solid var(--rule); padding-top: 20px; }
+  a { color: var(--blue); }
+  a:hover { color: var(--blue-deep); }
+  a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; border-radius: 3px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <div style="font-size: 12.5px; color: var(--muted); letter-spacing: .06em; margin-bottom: 14px;">만 6~9세 · 첫 용돈을 주기 시작한 집</div>
+    <h1>아이가 "이거 사줘" 할 때,<br>뭐라고 하세요?</h1>
+    <p class="lede"><b>말로 설명하는 대신 보여주세요.</b> 모으던 장난감이 <b>3주에서 4주로 밀리는 것</b>을 아이 눈에.</p>
+  </header>
+
+  <section>
+    <h2>"그거 사면 나중에 못 사"</h2>
+    <p>해보셨을 겁니다. 안 통했을 겁니다.</p>
+    <p><b>8살에게 "나중"은 크기가 없는 말</b>이기 때문입니다. 아이는 전 생애에서 미래의 보상을 가장 심하게 깎아서 평가하는 나이입니다. 게다가 먹는 것은 돈보다 더 심하게 깎입니다.</p>
+    <p>그래서 매번 부모가 <b>거절하는 사람</b>이 됩니다.</p>
+  </section>
+
+  <section>
+    <h2>말이 아니라 그림으로</h2>
+
+    <div class="phone" role="img" aria-label="앱 화면 예시: 목표 사진이 모은 만큼만 선명하고, 2,000원을 쓰면 3주에서 4주로 밀린다">
+      <div class="photo">
+        <div class="icon">
+          <svg width="92" height="92" viewBox="0 0 24 24" fill="none" stroke="#7A4E32" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="12" rx="1.5"></rect><path d="M3 12h18M8 8V5.5h8V8"></path><circle cx="8" cy="16" r="1.1"></circle><circle cx="16" cy="16" r="1.1"></circle></svg>
+        </div>
+        <div class="got"></div>
+        <div class="miss"></div>
+        <div class="back"><span class="badge">이만큼 되돌아가</span></div>
+        <div style="position:absolute; bottom:7px; left:10px;" class="hand"><span style="font-size:17px; font-weight:700; color:var(--blue-deep);">여기까지 모았어</span></div>
+      </div>
+      <div style="text-align:center; margin-top:11px;"><span class="hand" style="font-size:22px; font-weight:700;">레고 닌자고</span></div>
+      <div class="weeks">
+        <span class="w-old"><span class="n">3</span><span style="font-size:13px; text-decoration:line-through;">주</span></span>
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#C8322C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="align-self:center;"><path d="M5 12h13M13 7l5 5-5 5"></path></svg>
+        <span class="w-new"><span class="n">4</span><span style="font-size:18px; font-weight:600;">주</span></span>
+      </div>
+      <div style="text-align:center; margin-top:6px;"><span class="hand" style="font-size:19px;">토요일이 한 번 더 지나야 해</span></div>
+    </div>
+
+    <p style="margin-top:22px;">아이가 조를 때 폰을 꺼내 <b>목표 사진</b>을 보여줍니다. 금액을 밀면 사진이 <b>되돌아가고</b> 아래 숫자가 바뀝니다.</p>
+    <p>그리고 한 마디만 하면 됩니다.</p>
+    <p class="quote" style="margin-top:16px;">"네 돈이니까 네가 정해."</p>
+  </section>
+
+  <section>
+    <h2>왜 이게 다른가</h2>
+
+    <div class="ev">
+      <span class="dot" style="background: var(--blue);"></span>
+      <span class="body">결정하는 <b>그 순간</b>에 미래를 보여주면 선택이 바뀝니다. 그리고 <b>떠오른 그림이 선명할수록 효과가 컸습니다.</b>
+        <span class="src">Peters &amp; Büchel (2010), <i>Neuron</i> — fMRI로 기제까지 규명, 인용 898회</span></span>
+    </div>
+
+    <div class="ev">
+      <span class="dot" style="background: var(--green);"></span>
+      <span class="body">8살은 <b>면적은 읽고 개수 세기는 못 읽습니다.</b> 그래서 사진이 곧 막대이고, 네 자리 금액은 화면에서 뺐습니다.
+        <span class="src">Boyer et al. (2008) · Siegler &amp; Booth (2004)</span></span>
+    </div>
+
+    <div class="ev">
+      <span class="dot" style="background: var(--muted);"></span>
+      <span class="body"><b>용돈을 기록하는 앱이 아닙니다.</b> 아무것도 적지 않습니다. 퀴즈도, 레벨도, 조르기 버튼도 없습니다.
+        <span class="src">지식은 쉽게 오르고 행동은 거의 안 움직입니다 — 메타분석 2건</span></span>
+    </div>
+  </section>
+
+  <section>
+    <div class="cta-box">
+      <h2 style="margin-bottom: 10px;">먼저 써보실 10가정을 찾습니다</h2>
+      <p style="margin-top:0;">앱이 나오기 전, <b>종이 한 장</b>으로 4주 동안 같이 해볼 분을 찾습니다.</p>
+      <p class="small" style="margin-top:12px;">보내드리는 것 — 목표 카드(색칠하는 판) · 금액별로 몇 주 밀리는지 계산표 · 지갑 두 칸 도안 · 주간 기록지. <b>전부 무료이고 A4 몇 장이 전부입니다.</b></p>
+      <a class="cta" href="[신청 폼 URL을 여기에]">먼저 해볼래요</a>
+      <p class="small" style="margin-top:12px; text-align:center;">만 6~9세 자녀가 있고, 이미 용돈을 주고 계신 분이면 좋습니다.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>나중에 앱이 나오면?</h2>
+    <p class="small" style="margin-top:0;">아직 만들기 전입니다. 어느 쪽인지만 눌러주세요.</p>
+    <div class="price">
+      <a href="[가격 응답 URL · 3000]"><span class="lab">월 3,000원이면 쓸게요</span><span class="sub">커피 한 잔</span></a>
+      <a href="[가격 응답 URL · 5000]"><span class="lab">월 5,000원까지 괜찮아요</span><span class="sub">도움이 된다면</span></a>
+      <a href="[가격 응답 URL · free]"><span class="lab">무료면 쓰고, 유료면 안 써요</span><span class="sub">솔직한 답도 도움이 됩니다</span></a>
+    </div>
+  </section>
+
+  <footer>
+    <p class="small" style="margin:0;">신청하시면 이름·연락처·아이 나이만 받습니다. <b>아이 사진이나 실명은 받지 않습니다.</b> 이 실험이 끝나면(4주) 연락처는 폐기합니다.</p>
+    <p class="small" style="margin-top:10px;"><span class="ph">배포 전 할 일</span> 대괄호로 표시된 링크 3개를 실제 폼 URL로 바꾸고, 채널별로 다른 UTM을 붙이세요.</p>
+  </footer>
+
+</div>
